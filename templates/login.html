@@ -1,8 +1,27 @@
-<h1>Login</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AS Updates - Login</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
 
-<form method="POST">
-  <input name="email" placeholder="Email" required>
-  <button type="submit">Login</button>
-</form>
+<div class="container">
+    <div class="card">
+        <h1>Login</h1>
 
-<a href="/signup">Sign up</a>
+        <form method="POST">
+            <input type="email" name="email" placeholder="School Email" required>
+            <input type="password" name="pin" placeholder="PIN (if set)">
+            <button type="submit">Login</button>
+        </form>
+
+        <p class="small">
+            No account? <a href="/signup">Sign up</a>
+        </p>
+    </div>
+</div>
+
+</body>
+</html>
