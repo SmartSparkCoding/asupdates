@@ -1,126 +1,255 @@
-from flask import Flask, render_template, request, redirect, session
-from config import SECRET_KEY, ADMIN_PASSWORD
-from db import init_db, get_db
-from scheduler import start_scheduler
+from flask import Flask, render_template, request, redirect, session, url_for, flash
+import sqlite3
+from functools import wraps
+from werkzeug.security import generate_password_hash, check_password_hash
+from datetime import datetime
 
 app = Flask(__name__)
-app.secret_key = SECRET_KEY
+app.secret_key = "CHANGE_THIS_TO_A_RANDOM_SECRET"
 
-init_db()
-start_scheduler()
+DB_PATH = "database.db"
 
-# HOME
+# ----------------------------
+# DATABASE CONNECTION
+# ----------------------------
+def db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+# ----------------------------
+# AUTH DECORATORS
+# ----------------------------
+def login_required(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if "user_id" not in session:
+            return redirect("/login")
+        return f(*args, **kwargs)
+    return wrapper
+
+
+def admin_required(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if not session.get("is_admin"):
+            return redirect("/login")
+        return f(*args, **kwargs)
+    return wrapper
+
+
+# ----------------------------
+# HOME REDIRECT
+# ----------------------------
 @app.route("/")
 def home():
     return redirect("/login")
 
+
+# ----------------------------
 # SIGNUP
+# ----------------------------
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
     if request.method == "POST":
-        email = request.form.get("email")
+        email = request.form["email"]
         pin = request.form.get("pin")
 
-        db = get_db()
-        db.execute("INSERT INTO users (email, pin) VALUES (?, ?)", (email, pin))
-        db.commit()
-        db.close()
+        conn = db()
+        c = conn.cursor()
 
+        c.execute("SELECT * FROM users WHERE email=?", (email,))
+        if c.fetchone():
+            flash("User already exists")
+            return redirect("/signup")
+
+        pin_hash = generate_password_hash(pin) if pin else None
+
+        c.execute("""
+            INSERT INTO users (email, pin_hash, is_admin, send_emails)
+            VALUES (?, ?, 0, 1)
+        """, (email, pin_hash))
+
+        conn.commit()
+        conn.close()
+
+        flash("Account created. Please log in.")
         return redirect("/login")
 
     return render_template("signup.html")
 
-# LOGIN STEP 1 (EMAIL)
+
+# ----------------------------
+# LOGIN (STEP 1: EMAIL)
+# ----------------------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        email = request.form.get("email")
+        email = request.form["email"]
 
-        db = get_db()
-        user = db.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
-        db.close()
+        conn = db()
+        c = conn.cursor()
+        c.execute("SELECT * FROM users WHERE email=?", (email,))
+        user = c.fetchone()
+        conn.close()
 
         if not user:
-            return "User not found"
+            flash("User not found")
+            return redirect("/login")
 
-        session["temp_email"] = email
+        session["temp_user"] = user["id"]
 
-        # if PIN exists → go PIN page
-        if user["pin"]:
-            return redirect("/pin")
+        # if no PIN -> login directly
+        if not user["pin_hash"]:
+            session["user_id"] = user["id"]
+            session["is_admin"] = user["is_admin"]
+            return redirect("/dashboard")
 
-        session["user"] = email
-        return redirect("/dashboard")
+        return redirect("/pin")
 
     return render_template("login.html")
 
-# PIN CHECK
+
+# ----------------------------
+# PIN STEP
+# ----------------------------
 @app.route("/pin", methods=["GET", "POST"])
 def pin():
-    email = session.get("temp_email")
+    user_id = session.get("temp_user")
 
-    if not email:
+    if not user_id:
         return redirect("/login")
 
     if request.method == "POST":
-        entered = request.form.get("pin")
+        pin = request.form["pin"]
 
-        db = get_db()
-        user = db.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
-        db.close()
+        conn = db()
+        c = conn.cursor()
+        c.execute("SELECT * FROM users WHERE id=?", (user_id,))
+        user = c.fetchone()
+        conn.close()
 
-        if user["pin"] == entered:
-            session["user"] = email
-            return redirect("/dashboard")
+        if not user or not check_password_hash(user["pin_hash"], pin):
+            return render_template("pin.html", error="Incorrect PIN")
 
-        return "Wrong PIN"
+        session["user_id"] = user["id"]
+        session["is_admin"] = user["is_admin"]
+        session.pop("temp_user", None)
+
+        return redirect("/dashboard")
 
     return render_template("pin.html")
 
+
+# ----------------------------
 # DASHBOARD
+# ----------------------------
 @app.route("/dashboard")
+@login_required
 def dashboard():
-    if not session.get("user"):
-        return redirect("/login")
+    conn = db()
+    c = conn.cursor()
 
-    return render_template("dashboard.html", email=session["user"])
+    c.execute("SELECT email FROM users WHERE id=?", (session["user_id"],))
+    user = c.fetchone()
 
-# ADMIN
-@app.route("/admin", methods=["GET", "POST"])
+    return render_template("dashboard.html", email=user["email"])
+
+
+# ----------------------------
+# ADMIN DASHBOARD
+# ----------------------------
+@app.route("/admin")
+@admin_required
 def admin():
-    if request.method == "POST":
-        if request.form.get("password") == ADMIN_PASSWORD:
-            session["admin"] = True
-            return redirect("/admin/dashboard")
+    conn = db()
+    c = conn.cursor()
 
-        return "Wrong password"
+    c.execute("SELECT id, email, send_emails FROM users")
+    users = c.fetchall()
 
-    return render_template("admin.html")
+    return render_template("admin.html", users=users)
 
-# ADMIN DASH
-@app.route("/admin/dashboard")
-def admin_dash():
-    if not session.get("admin"):
-        return redirect("/admin")
 
-    db = get_db()
-    users = db.execute("SELECT * FROM users").fetchall()
-    db.close()
-
-    return render_template("admin_dashboard.html", users=users)
-
+# ----------------------------
 # DELETE USER
-@app.route("/admin/delete/<int:id>")
-def delete(id):
-    if not session.get("admin"):
-        return redirect("/admin")
+# ----------------------------
+@app.route("/delete-user/<int:user_id>")
+@admin_required
+def delete_user(user_id):
+    conn = db()
+    c = conn.cursor()
 
-    db = get_db()
-    db.execute("DELETE FROM users WHERE id=?", (id,))
-    db.commit()
-    db.close()
+    c.execute("DELETE FROM users WHERE id=?", (user_id,))
+    conn.commit()
+    conn.close()
 
-    return redirect("/admin/dashboard")
+    return redirect("/admin")
 
+
+# ----------------------------
+# TOGGLE EMAILS
+# ----------------------------
+@app.route("/toggle-emails", methods=["POST"])
+@login_required
+def toggle_emails():
+    conn = db()
+    c = conn.cursor()
+
+    c.execute("SELECT send_emails FROM users WHERE id=?", (session["user_id"],))
+    current = c.fetchone()["send_emails"]
+
+    c.execute("""
+        UPDATE users
+        SET send_emails=?
+        WHERE id=?
+    """, (0 if current else 1, session["user_id"]))
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/dashboard")
+
+
+# ----------------------------
+# LOGOUT (FIXED)
+# ----------------------------
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/login")
+
+
+# ----------------------------
+# HOLIDAY CHECK (UTILITY)
+# ----------------------------
+def is_holiday(date_str):
+    conn = db()
+    c = conn.cursor()
+
+    c.execute("SELECT 1 FROM holidays WHERE date=?", (date_str,))
+    result = c.fetchone()
+
+    conn.close()
+    return result is not None
+
+
+# ----------------------------
+# ERROR HANDLERS
+# ----------------------------
+@app.errorhandler(404)
+def not_found(e):
+    return render_template("error.html", msg="Page not found"), 404
+
+
+@app.errorhandler(500)
+def server_error(e):
+    return render_template("error.html", msg="Server error"), 500
+
+
+# ----------------------------
+# RUN SERVER
+# ----------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
