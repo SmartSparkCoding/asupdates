@@ -1,0 +1,17 @@
+<h1>Admin Dashboard</h1>
+
+<h2>Users</h2>
+
+<ul>
+{% for user in users %}
+  <li>
+    {{ user[1] }}
+    <a href="/admin/delete/{{ user[0] }}">Delete</a>
+  </li>
+{% endfor %}
+</ul>
+
+<h2>Settings</h2>
+<p>Week Type: {{ settings[1] }}</p>
+<p>Holiday Mode: {{ settings[2] }}</p>
+<p>Message: {{ settings[3] }}</p>
