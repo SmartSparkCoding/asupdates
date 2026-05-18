@@ -2,8 +2,11 @@ import smtplib
 from email.mime.text import MIMEText
 from config import EMAIL_FROM, EMAIL_APP_PASSWORD
 
-
 def send_email(to, subject, html):
+    if not EMAIL_FROM or not EMAIL_APP_PASSWORD:
+        print("Email not configured")
+        return
+
     msg = MIMEText(html, "html")
     msg["Subject"] = subject
     msg["From"] = EMAIL_FROM
