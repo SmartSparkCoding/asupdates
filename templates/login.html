@@ -2,26 +2,93 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AS Updates - Login</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+    <div class="container login-container">
+        <div class="form-card">
+            <div class="card-header">
+                <h1>📧 AS Updates</h1>
+                <p class="subtitle">School Schedule & Email Updates</p>
+            </div>
 
-<div class="container">
-    <div class="card">
-        <h1>Login</h1>
+            {% if get_flashed_messages() %}
+                {% for category, message in get_flashed_messages(with_categories=true) %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
 
-        <form method="POST">
-            <input type="email" name="email" placeholder="School Email" required>
-            <input type="password" name="pin" placeholder="PIN (if set)">
-            <button type="submit">Login</button>
-        </form>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="showTab('user-login')">User Login</button>
+                <button class="tab-btn" onclick="showTab('admin-login')">Admin</button>
+            </div>
 
-        <p class="small">
-            No account? <a href="/signup">Sign up</a>
-        </p>
+            <!-- USER LOGIN TAB -->
+            <div id="user-login" class="tab-content active">
+                <form method="POST" class="form-group">
+                    <div class="form-item">
+                        <label for="email">School Email</label>
+                        <input 
+                            type="email" 
+                            id="email"
+                            name="email" 
+                            placeholder="your.email@school.com" 
+                            required
+                            autocomplete="email"
+                        >
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-large">Continue</button>
+                </form>
+
+                <p class="form-footer">
+                    No account? <a href="/signup">Sign up here</a>
+                </p>
+            </div>
+
+            <!-- ADMIN LOGIN TAB -->
+            <div id="admin-login" class="tab-content">
+                <form method="POST" class="form-group">
+                    <div class="form-item">
+                        <label for="admin-password">Admin Password</label>
+                        <input 
+                            type="password" 
+                            id="admin-password"
+                            name="password" 
+                            placeholder="••••••••" 
+                            required
+                            autocomplete="off"
+                        >
+                    </div>
+                    <button type="submit" class="btn btn-admin btn-large">Admin Login</button>
+                </form>
+                <p class="form-footer small">
+                    Contact administrator for credentials
+                </p>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <h3>🔒 Secure & Private</h3>
+            <p>Your school data is protected and only sent during scheduled times.</p>
+        </div>
     </div>
-</div>
 
+    <script>
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+    </script>
 </body>
 </html>

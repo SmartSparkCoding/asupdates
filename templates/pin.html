@@ -1,26 +1,52 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Enter PIN</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AS Updates - Verify PIN</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+    <div class="container login-container">
+        <div class="form-card">
+            <div class="card-header">
+                <h1>🔐 Verify PIN</h1>
+                <p class="subtitle">Enter your PIN to continue</p>
+            </div>
 
-<div class="container">
-    <div class="card">
-        <h2>Enter PIN</h2>
+            {% if get_flashed_messages() %}
+                {% for category, message in get_flashed_messages(with_categories=true) %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
 
-        <form method="POST">
-            <input type="password" name="pin" placeholder="Your PIN">
-            <button type="submit">Continue</button>
-        </form>
+            <div class="pin-info">
+                <p>📧 <strong>{{ email }}</strong></p>
+            </div>
 
-        {% if error %}
-            <p style="color:red;">{{ error }}</p>
-        {% endif %}
+            <form method="POST" class="form-group">
+                <div class="form-item">
+                    <label for="pin">Enter Your PIN</label>
+                    <input 
+                        type="password" 
+                        id="pin"
+                        name="pin" 
+                        placeholder="••••"
+                        maxlength="6"
+                        required
+                        autocomplete="off"
+                        inputmode="numeric"
+                    >
+                    <small class="help-text">Your PIN is case-sensitive</small>
+                </div>
 
+                <button type="submit" class="btn btn-primary btn-large">Verify</button>
+            </form>
+
+            <p class="form-footer">
+                <a href="/login">Back to login</a>
+            </p>
+        </div>
     </div>
-</div>
-
 </body>
 </html>

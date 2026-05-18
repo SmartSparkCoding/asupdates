@@ -2,49 +2,226 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Admin Panel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel - AS Updates</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-
-<div class="topbar">
-    <h2>Admin Dashboard</h2>
-    <a href="/logout">Logout</a>
-</div>
-
-<div class="grid">
-
-    <div class="card">
-        <h3>System Status</h3>
-        <p>Server: Running</p>
-        <p>Email Queue: Active</p>
+    <div class="topbar admin-topbar">
+        <div class="topbar-left">
+            <h2>🔧 Admin Dashboard</h2>
+        </div>
+        <div class="topbar-right">
+            <a href="/logout" class="btn btn-small btn-outline">Logout</a>
+        </div>
     </div>
 
-    <div class="card">
-        <h3>Users</h3>
-        {% for user in users %}
-            <div class="user-row">
-                {{ user[1] }} 
-                <a href="/delete-user/{{ user[0] }}">Delete</a>
-            </div>
+    {% if get_flashed_messages() %}
+        {% for category, message in get_flashed_messages(with_categories=true) %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
         {% endfor %}
+    {% endif %}
+
+    <div class="container">
+        <!-- System Status Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3>📊 System Status</h3>
+            </div>
+            <div class="card-body">
+                <div class="status-grid">
+                    <div class="status-item">
+                        <span class="status-label">Total Users:</span>
+                        <span class="status-value">{{ user_count }}</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Database:</span>
+                        <span class="status-value">✓ Connected</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Scheduler:</span>
+                        <span class="status-value">✓ Active</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Holiday Settings Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3>🏖️ Holiday Mode</h3>
+            </div>
+            <div class="card-body">
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <p class="setting-label">
+                            {% if holiday_mode == 1 %}
+                                <strong>🏖️ Holiday Mode: ON</strong>
+                                <br><small>Emails are currently paused</small>
+                            {% else %}
+                                <strong>Holiday Mode: OFF</strong>
+                                <br><small>Emails will be sent normally</small>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <form method="POST" action="/admin/toggle-holiday" class="setting-form">
+                        <button type="submit" class="btn {% if holiday_mode == 1 %}btn-success{% else %}btn-warning{% endif %}">
+                            Toggle Holiday Mode
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- AB Week Setting Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3>📅 AB Week Schedule</h3>
+            </div>
+            <div class="card-body">
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <p class="setting-label">Current Week: <strong>Week {{ ab_week }}</strong></p>
+                    </div>
+                    <div class="setting-form">
+                        {% if ab_week == "A" %}
+                            <form method="POST" action="/admin/set-week/B" style="display:inline;">
+                                <button type="submit" class="btn btn-small btn-info">Switch to Week B</button>
+                            </form>
+                        {% else %}
+                            <form method="POST" action="/admin/set-week/A" style="display:inline;">
+                                <button type="submit" class="btn btn-small btn-info">Switch to Week A</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Table Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3>👥 Manage Users ({{ user_count }})</h3>
+            </div>
+            <div class="card-body">
+                {% if users %}
+                    <div class="table-responsive">
+                        <table class="users-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Email</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                    <tr>
+                                        <td class="id-cell">#{{ user.id }}</td>
+                                        <td class="email-cell">{{ user.email }}</td>
+                                        <td class="status-cell">
+                                            {% if user.send_emails == 1 %}
+                                                <span class="badge badge-success">✓ Emails On</span>
+                                            {% else %}
+                                                <span class="badge badge-secondary">✗ Emails Off</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="date-cell">
+                                            {% if user.created_at %}
+                                                {{ user.created_at.split(' ')[0] }}
+                                            {% else %}
+                                                —
+                                            {% endif %}
+                                        </td>
+                                        <td class="actions-cell">
+                                            <form method="POST" action="/admin/toggle-user-emails/{{ user.id }}" style="display:inline;">
+                                                <button type="submit" class="btn btn-tiny btn-secondary">Toggle</button>
+                                            </form>
+                                            <form method="POST" action="/admin/delete-user/{{ user.id }}" style="display:inline;" onsubmit="return confirm('Delete {{ user.email }}?');">
+                                                <button type="submit" class="btn btn-tiny btn-danger">Delete</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <p>No users yet. Add one below!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Add User Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3>➕ Add User</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="/admin/add-user" class="form-group">
+                    <div class="form-item">
+                        <label for="new-email">Email Address</label>
+                        <input 
+                            type="email" 
+                            id="new-email"
+                            name="email" 
+                            placeholder="user@school.com" 
+                            required
+                        >
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add User</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Test Email Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3>📧 Test Email</h3>
+            </div>
+            <div class="card-body">
+                <p class="card-description">Send a test email to verify Gmail configuration.</p>
+                <form method="POST" action="/admin/test-email">
+                    <button type="submit" class="btn btn-info">Send Test Email</button>
+                </form>
+                <small class="help-text" style="margin-top: 10px; display: block;">
+                    Note: Check your email inbox or spam folder. Requires Gmail API credentials.
+                </small>
+            </div>
+        </div>
+
+        <!-- Configuration Info Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3>⚙️ Configuration</h3>
+            </div>
+            <div class="card-body">
+                <div class="info-box">
+                    <h4>Email Scheduler</h4>
+                    <ul>
+                        <li>Schedule: Weekdays (Mon-Fri) at 08:00 UK time</li>
+                        <li>Timezone: Europe/London</li>
+                        <li>Holiday Mode: Emails paused when enabled</li>
+                    </ul>
+                </div>
+                <div class="info-box">
+                    <h4>Environment Variables</h4>
+                    <ul>
+                        <li><code>ADMIN_PASSWORD</code> - Admin login password</li>
+                        <li><code>GMAIL_USER</code> - Gmail sender address</li>
+                        <li><code>GMAIL_APP_PASSWORD</code> - Gmail app password (NOT regular password)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="card">
-        <h3>Actions</h3>
-        <a href="/send-test-email">Send Test Email</a><br>
-        <a href="/force-send">Force Send All Emails</a>
-    </div>
-
-    <div class="card">
-        <h3>Holidays</h3>
-        <form method="POST" action="/add-holiday">
-            <input name="date" placeholder="YYYY-MM-DD">
-            <button>Add Holiday</button>
-        </form>
-    </div>
-
-</div>
-
+    <footer class="page-footer">
+        <p>AS Updates Admin Panel • <a href="/api/status">API Status</a></p>
+    </footer>
 </body>
 </html>

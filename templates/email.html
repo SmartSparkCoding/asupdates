@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily School Update</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background: #f8f9fa;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        .email-wrapper {
+            background: #ffffff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e293b 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+        .header p {
+            margin: 5px 0 0 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .greeting {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e3a8a;
+            margin-bottom: 20px;
+        }
+        .section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-left: 4px solid #3b82f6;
+            border-radius: 4px;
+        }
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e3a8a;
+            margin: 0 0 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-content {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.8;
+        }
+        .section-content ul,
+        .section-content ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .section-content li {
+            margin-bottom: 8px;
+        }
+        .divider {
+            border: none;
+            border-top: 1px solid #e5e7eb;
+            margin: 20px 0;
+        }
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #e5e7eb;
+        }
+        .cta-button {
+            display: inline-block;
+            background: #3b82f6;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+        .cta-button:hover {
+            background: #1e3a8a;
+        }
+        .info-box {
+            background: #dbeafe;
+            border-left: 4px solid #3b82f6;
+            padding: 12px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        .emoji {
+            font-size: 18px;
+            margin-right: 5px;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 10px;
+            }
+            .content {
+                padding: 20px 15px;
+            }
+            .header {
+                padding: 20px 15px;
+            }
+            .header h1 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="email-wrapper">
+            <!-- HEADER -->
+            <div class="header">
+                <h1>📧 Daily School Update</h1>
+                <p>{{ current_date }}</p>
+            </div>
+
+            <!-- CONTENT -->
+            <div class="content">
+                <div class="greeting">
+                    👋 Hello {{ name }},
+                </div>
+
+                <p>Here's your personalized daily school update for today:</p>
+
+                <!-- TIMETABLE SECTION -->
+                {% if timetable %}
+                <div class="section">
+                    <div class="section-title">
+                        <span class="emoji">📚</span> Today's Timetable
+                    </div>
+                    <div class="section-content">
+                        {{ timetable }}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- LUNCH MENU SECTION -->
+                {% if lunch %}
+                <div class="section">
+                    <div class="section-title">
+                        <span class="emoji">🍽️</span> Lunch Menu
+                    </div>
+                    <div class="section-content">
+                        {{ lunch }}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- EVENTS SECTION -->
+                {% if events %}
+                <div class="section">
+                    <div class="section-title">
+                        <span class="emoji">📅</span> Today's Events
+                    </div>
+                    <div class="section-content">
+                        {{ events }}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- UPDATES SECTION -->
+                {% if updates %}
+                <div class="section">
+                    <div class="section-title">
+                        <span class="emoji">📢</span> Important Updates
+                    </div>
+                    <div class="section-content">
+                        {{ updates }}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- DEFAULT CONTENT -->
+                {% if not timetable and not lunch and not events and not updates %}
+                <div class="info-box">
+                    <strong>📋 No Special Updates Today</strong>
+                    <p>Your timetable and schedule information are available in your school portal.</p>
+                </div>
+                {% endif %}
+
+                <hr class="divider">
+
+                <p style="font-size: 14px; color: #666;">
+                    ✨ Your updates are personalized based on your schedule and school settings. 
+                    Holiday mode will pause these emails during breaks.
+                </p>
+            </div>
+
+            <!-- FOOTER -->
+            <div class="footer">
+                <p>
+                    📧 AS Updates • Daily School Information Service<br>
+                    <strong>Email sent:</strong> {{ sent_datetime }}<br>
+                    <a href="{{ unsubscribe_url }}" style="color: #3b82f6; text-decoration: none;">Manage Email Preferences</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

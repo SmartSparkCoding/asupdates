@@ -2,38 +2,117 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - AS Updates</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-
-<div class="topbar">
-    <h2>AS Updates Dashboard</h2>
-    <a href="/logout">Logout</a>
-</div>
-
-<div class="grid">
-
-    <div class="card">
-        <h3>Today's Timetable</h3>
-        <p>Your lessons are shown in your daily email.</p>
+    <div class="topbar">
+        <div class="topbar-left">
+            <h2>📊 Dashboard</h2>
+        </div>
+        <div class="topbar-right">
+            <a href="/logout" class="btn btn-small btn-outline">Logout</a>
+        </div>
     </div>
 
-    <div class="card">
-        <h3>Email Settings</h3>
+    {% if get_flashed_messages() %}
+        {% for category, message in get_flashed_messages(with_categories=true) %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
 
-        <form method="POST" action="/toggle-emails">
-            <button>Toggle Emails</button>
-        </form>
+    <div class="container">
+        <!-- Account Info Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3>👤 Account Information</h3>
+            </div>
+            <div class="card-body">
+                <div class="info-row">
+                    <span class="label">Email:</span>
+                    <span class="value">{{ email }}</span>
+                </div>
+                <div class="info-row">
+                    <span class="label">Email Updates:</span>
+                    <span class="value">
+                        {% if send_emails == 1 %}
+                            <span class="badge badge-success">✓ Enabled</span>
+                        {% else %}
+                            <span class="badge badge-secondary">✗ Disabled</span>
+                        {% endif %}
+                    </span>
+                </div>
+                {% if holiday_mode == 1 %}
+                    <div class="holiday-alert">
+                        <strong>🏖️ Holiday Mode Active</strong>
+                        <p>Emails are currently paused for the holiday period.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
 
+        <!-- Email Settings Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3>📧 Email Settings</h3>
+            </div>
+            <div class="card-body">
+                <p class="card-description">
+                    Receive daily school updates with your timetable, events, and lunch menu every weekday at 08:00.
+                </p>
+                
+                <form method="POST" action="/toggle-emails" class="form-group">
+                    {% if send_emails == 1 %}
+                        <button type="submit" class="btn btn-warning">Disable Emails</button>
+                    {% else %}
+                        <button type="submit" class="btn btn-success">Enable Emails</button>
+                    {% endif %}
+                </form>
+
+                <div class="info-box">
+                    <h4>📅 Schedule</h4>
+                    <ul>
+                        <li>Sent: Monday to Friday at 08:00 AM (UK time)</li>
+                        <li>Includes: Timetable, Events, Lunch Menu</li>
+                        <li>Holiday mode: Email paused during school holidays</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- School Info Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3>🏫 School Week</h3>
+            </div>
+            <div class="card-body">
+                <p class="card-description">Current week schedule setting:</p>
+                <div class="week-display">
+                    <span class="week-badge">Week {{ ab_week }}</span>
+                </div>
+                <p class="help-text">This is set by your school administrator.</p>
+            </div>
+        </div>
+
+        <!-- Help Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3>❓ Need Help?</h3>
+            </div>
+            <div class="card-body">
+                <ul>
+                    <li>📧 Check your email's spam folder if you don't see updates</li>
+                    <li>🔐 Use a PIN for extra security during login</li>
+                    <li>📅 Emails are only sent on weekdays</li>
+                    <li>🏖️ Holiday mode pauses all emails during breaks</li>
+                </ul>
+            </div>
+        </div>
     </div>
 
-    <div class="card">
-        <h3>Account</h3>
-        <p>Email: {{ email }}</p>
-    </div>
-
-</div>
-
+    <footer class="page-footer">
+        <p>AS Updates &copy; 2024 • <a href="/api/status">System Status</a></p>
+    </footer>
 </body>
 </html>

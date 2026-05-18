@@ -1,21 +1,36 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Error</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error - AS Updates</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+    <div class="container error-container">
+        <div class="error-card">
+            <div class="error-icon">
+                ⚠️
+            </div>
 
-<div class="container">
-    <div class="card">
-        <h2>Something went wrong</h2>
-        <p>{{ msg }}</p>
+            <h1>{{ error_code }}</h1>
+            <p class="error-message">{{ error_message }}</p>
 
-        <a href="/login">
-            <button>Go back</button>
-        </a>
+            <div class="error-details">
+                {% if error_code == 404 %}
+                    <p>The page you're looking for doesn't exist or has been moved.</p>
+                {% elif error_code == 500 %}
+                    <p>Something went wrong on our end. The team has been notified.</p>
+                {% else %}
+                    <p>An error occurred. Please try again.</p>
+                {% endif %}
+            </div>
+
+            <div class="error-actions">
+                <a href="/" class="btn btn-primary">Go Home</a>
+                <a href="/login" class="btn btn-secondary">Login</a>
+            </div>
+        </div>
     </div>
-</div>
-
 </body>
 </html>
