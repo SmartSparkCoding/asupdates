@@ -1,3 +1,4 @@
 flask
-pandas
-holidays
+flask-session
+apscheduler
+python-dotenv
