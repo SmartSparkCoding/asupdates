@@ -7,8 +7,8 @@ from dotenv import load_dotenv
 
 from config import SECRET_KEY, ADMIN_PASSWORD, DEBUG, DATABASE
 from db import get_db, init_db, verify_schema
-from emailer import send_test_email
-from scheduler import start_scheduler
+from emailer import send_test_email, send_email
+from scheduler import start_scheduler, generate_email_html
 
 # Load environment variables
 load_dotenv()
@@ -492,6 +492,52 @@ def admin_toggle_user_emails(user_id):
     except Exception as e:
         print(f"[✗] Toggle user emails error: {e}")
         flash("Error updating user", "danger")
+    
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/send-email/<int:user_id>", methods=["POST"])
+@admin_required
+def admin_send_email(user_id):
+    """Send an email immediately to a specific user (ignoring schedule/holiday mode)."""
+    
+    try:
+        db = get_db()
+        c = db.cursor()
+        
+        # Get user email
+        c.execute("SELECT email FROM users WHERE id=?", (user_id,))
+        result = c.fetchone()
+        
+        if not result:
+            flash("User not found", "warning")
+            db.close()
+            return redirect(url_for("admin_dashboard"))
+        
+        user_email = result[0]
+        
+        # Generate email HTML
+        html_content = generate_email_html(user_email)
+        
+        # Send the email immediately
+        success = send_email(
+            to_email=user_email,
+            subject="School Update - Manual Send",
+            html_content=html_content
+        )
+        
+        db.close()
+        
+        if success:
+            print(f"[✓] Email sent to {user_email} (manual)")
+            flash(f"Email sent to {user_email}", "success")
+        else:
+            print(f"[✗] Email failed for {user_email} (manual)")
+            flash(f"Failed to send email to {user_email}", "danger")
+        
+    except Exception as e:
+        print(f"[✗] Send email error: {e}")
+        flash(f"Error sending email: {str(e)}", "danger")
     
     return redirect(url_for("admin_dashboard"))
 

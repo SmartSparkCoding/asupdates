@@ -136,6 +136,9 @@
                                             {% endif %}
                                         </td>
                                         <td class="actions-cell">
+                                            <form method="POST" action="/admin/send-email/{{ user.id }}" style="display:inline;">
+                                                <button type="submit" class="btn btn-tiny btn-info">Email</button>
+                                            </form>
                                             <form method="POST" action="/admin/toggle-user-emails/{{ user.id }}" style="display:inline;">
                                                 <button type="submit" class="btn btn-tiny btn-secondary">Toggle</button>
                                             </form>
