@@ -1,6 +1,50 @@
-<h1>Admin Login</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Panel</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
 
-<form method="POST">
-  <input name="password" type="password">
-  <button>Login</button>
-</form>
+<div class="topbar">
+    <h2>Admin Dashboard</h2>
+    <a href="/logout">Logout</a>
+</div>
+
+<div class="grid">
+
+    <div class="card">
+        <h3>System Status</h3>
+        <p>Server: Running</p>
+        <p>Email Queue: Active</p>
+    </div>
+
+    <div class="card">
+        <h3>Users</h3>
+        {% for user in users %}
+            <div class="user-row">
+                {{ user[1] }} 
+                <a href="/delete-user/{{ user[0] }}">Delete</a>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="card">
+        <h3>Actions</h3>
+        <a href="/send-test-email">Send Test Email</a><br>
+        <a href="/force-send">Force Send All Emails</a>
+    </div>
+
+    <div class="card">
+        <h3>Holidays</h3>
+        <form method="POST" action="/add-holiday">
+            <input name="date" placeholder="YYYY-MM-DD">
+            <button>Add Holiday</button>
+        </form>
+    </div>
+
+</div>
+
+</body>
+</html>
