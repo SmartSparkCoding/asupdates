@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Enter PIN</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h2>Enter PIN</h2>
+
+        <form method="POST">
+            <input type="password" name="pin" placeholder="Your PIN">
+            <button type="submit">Continue</button>
+        </form>
+
+        {% if error %}
+            <p style="color:red;">{{ error }}</p>
+        {% endif %}
+
+    </div>
+</div>
+
+</body>
+</html>
