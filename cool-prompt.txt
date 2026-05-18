@@ -1,0 +1,217 @@
+You are a senior full-stack engineer. You are fixing and rebuilding a broken Flask + SQLite + email scheduling system called “as-updates”.
+
+The current project has multiple critical issues:
+- Missing database tables (users, settings, etc.)
+- Missing templates (pin.html, etc.)
+- Broken authentication (admin bypass possible)
+- No session security
+- No working logout
+- No working PIN system
+- No holiday system working
+- No email system integrated (Gmail not connected)
+- No clean structure
+- No styling consistency
+- Error pages are unstyled plain text
+- Admin dashboard shows no users or broken queries
+- Database is not reliably initialised
+- Scheduler not reliable or missing
+
+Your job:
+👉 REBUILD THE PROJECT PROPERLY WITHOUT REMOVING FEATURES
+👉 FIX ALL BUGS
+👉 MAKE IT PRODUCTION-STYLE CLEAN (but still simple Flask app)
+👉 MAKE UI MODERN AND SLEEK
+👉 ENSURE EVERYTHING WORKS END-TO-END
+
+---
+
+# REQUIRED FEATURES (DO NOT SKIP ANY)
+
+## 1. Authentication System
+- Users sign up with email + optional PIN
+- Login flow:
+  - enter email
+  - if PIN exists → redirect to PIN verification page
+  - if no PIN → log in directly
+- Secure session system (Flask sessions)
+- Prevent direct access to /admin unless logged in as admin
+- Prevent direct access to /dashboard without login
+
+## 2. Admin System
+- Admin login required (hardcoded ADMIN_PASSWORD in config.py OR .env)
+- Admin dashboard must:
+  - list all users in a table
+  - allow delete user
+  - allow add user manually
+  - toggle “send_emails” per user
+  - view server status
+  - test email sending
+  - set holiday mode ON/OFF
+
+## 3. Database (CRITICAL FIX)
+Use SQLite properly.
+
+Must auto-create tables on startup:
+
+TABLE: users
+- id INTEGER PRIMARY KEY AUTOINCREMENT
+- email TEXT UNIQUE
+- pin TEXT (nullable)
+- send_emails INTEGER DEFAULT 1
+- created_at TIMESTAMP
+
+TABLE: settings
+- id INTEGER PRIMARY KEY
+- holiday_mode INTEGER DEFAULT 0
+- ab_week TEXT DEFAULT 'A'
+
+Fix all errors:
+- “no such table: users”
+- “table settings has no column id”
+- any schema mismatch must be corrected by a clean init_db()
+
+IMPORTANT:
+- init_db() must DROP and RECREATE tables safely if schema mismatch detected OR use CREATE TABLE IF NOT EXISTS correctly.
+
+## 4. Email System (GMAIL INTEGRATION)
+Create emailer.py:
+
+- Use SMTP Gmail:
+  - smtp.gmail.com
+  - port 587
+- Use environment variables:
+  - GMAIL_USER
+  - GMAIL_APP_PASSWORD
+
+DO NOT USE NORMAL PASSWORD (must be app password)
+
+Must include:
+send_email(to, subject, html_content)
+
+Must support:
+- sending HTML email template
+- injecting dynamic variables:
+  - name/email
+  - timetable
+  - lunch menu
+  - events
+  - updates
+
+## 5. Scheduler (CRON STYLE)
+scheduler.py must:
+- run every weekday at 08:00 UK time
+- skip weekends
+- skip if holiday_mode = 1
+- loop through users WHERE send_emails = 1
+- generate personalised email per user
+- call emailer.send_email()
+
+Use:
+- APScheduler OR simple background thread (must be stable in Flask)
+
+## 6. Frontend (IMPORTANT UI FIX)
+Make ALL templates modern:
+
+Use:
+- clean white + navy UI
+- rounded cards
+- simple fonts (Inter or system UI)
+- mobile responsive
+
+Templates required:
+
+login.html
+signup.html
+dashboard.html
+admin.html
+pin.html
+error.html (IMPORTANT: replace raw Flask errors)
+
+Each must:
+- not be broken
+- not show raw errors
+- include retry-friendly UI
+- include navigation
+
+## 7. SECURITY FIXES
+- Fix /admin bypass issue
+- Add @login_required decorator
+- Add @admin_required decorator
+- Prevent direct URL access bypass
+- Fix logout properly clearing session
+
+## 8. ROUTES REQUIRED
+
+/
+→ signup/login page
+
+/signup
+/login
+/logout
+
+/dashboard
+→ user dashboard
+
+/admin
+→ admin dashboard (protected)
+
+/pin
+→ PIN verification page
+
+## 9. EMAIL TEMPLATE SYSTEM
+
+There must be a folder:
+templates/email.html
+
+This is the EMAIL TEMPLATE I will paste later.
+
+You must:
+- load it
+- replace variables like:
+  {{ name }}
+  {{ timetable }}
+  {{ events }}
+  {{ lunch }}
+
+Make it safe and dynamic.
+
+---
+
+## 10. HOLIDAY SYSTEM
+- admin can toggle holiday_mode
+- when ON:
+  - scheduler DOES NOT send emails
+  - dashboard shows “Holiday mode active”
+
+---
+
+## 11. DEBUGGING REQUIREMENTS
+Fix:
+- TemplateNotFound errors
+- SQLite OperationalErrors
+- Login redirect loops
+- Admin redirect loops
+- Broken sessions
+
+---
+
+## 12. FINAL OUTPUT REQUIREMENT
+After fixing:
+- App must run with:
+  python3 app.py
+
+- Must auto-create DB
+- Must not crash on first run
+- Must show clean UI
+- Must send emails (if configured)
+
+---
+
+## IMPORTANT
+Do NOT leave placeholders like “TODO”.
+Do NOT partially implement features.
+Do NOT break existing logic unless replacing it fully.
+
+If something is missing, CREATE IT.
+
+This must be a fully working system.
