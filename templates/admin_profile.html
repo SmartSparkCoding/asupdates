@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile - Ashford School Updates</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="topbar admin-topbar">
+        <div class="topbar-left">
+            <h2>👤 User Profile</h2>
+        </div>
+        <div class="topbar-right">
+            <a href="/admin" class="btn btn-small btn-outline">Back to Admin</a>
+        </div>
+    </div>
+
+    {% if get_flashed_messages() %}
+        {% for category, message in get_flashed_messages(with_categories=true) %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h3>Profile for {{ user.name or user.email }}</h3>
+            </div>
+            <div class="card-body">
+                <div class="profile-summary">
+                    <strong>Email:</strong> {{ user.email }}<br>
+                    <strong>PIN:</strong> {% if user.pin %}Set{% else %}Not set{% endif %}<br>
+                    <strong>Email updates:</strong> {% if send_emails == 1 %}On{% else %}Off{% endif %}
+                </div>
+
+                <form method="POST" class="form-group">
+                    <div class="account-grid">
+                        <div class="form-item">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" name="email" value="{{ user.email }}" required>
+                        </div>
+                        <div class="form-item">
+                            <label for="name">Name</label>
+                            <input type="text" id="name" name="name" value="{{ user.name }}" placeholder="Full name">
+                        </div>
+                        <div class="form-item">
+                            <label for="pin">New PIN</label>
+                            <input type="password" id="pin" name="pin" placeholder="Leave blank to keep current PIN">
+                        </div>
+                        <div class="form-item">
+                            <label for="send_emails">Email Updates</label>
+                            <label style="display:flex; align-items:center; gap:10px; font-weight:600; color: var(--navy);">
+                                <input type="checkbox" id="send_emails" name="send_emails" {% if send_emails == 1 %}checked{% endif %}>
+                                Enable for this user
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="timetable-grid">
+                        <div class="timetable-panel">
+                            <h4>Week A Timetable</h4>
+                            <table class="timetable-table">
+                                <thead>
+                                    <tr>
+                                        <th>Period</th>
+                                        <th>Subject</th>
+                                        <th>Room</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for period in timetable_periods %}
+                                        {% set period_key = period|string %}
+                                        <tr>
+                                            <td class="period-cell">{{ period }}</td>
+                                            <td><input type="text" name="timetable_a_{{ period }}_subject" value="{{ user.timetable_a[period_key]['subject'] }}"></td>
+                                            <td><input type="text" name="timetable_a_{{ period }}_room" value="{{ user.timetable_a[period_key]['room'] }}"></td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="timetable-panel">
+                            <h4>Week B Timetable</h4>
+                            <table class="timetable-table">
+                                <thead>
+                                    <tr>
+                                        <th>Period</th>
+                                        <th>Subject</th>
+                                        <th>Room</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for period in timetable_periods %}
+                                        {% set period_key = period|string %}
+                                        <tr>
+                                            <td class="period-cell">{{ period }}</td>
+                                            <td><input type="text" name="timetable_b_{{ period }}_subject" value="{{ user.timetable_b[period_key]['subject'] }}"></td>
+                                            <td><input type="text" name="timetable_b_{{ period }}_room" value="{{ user.timetable_b[period_key]['room'] }}"></td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-large">Save Profile</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

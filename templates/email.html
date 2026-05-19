@@ -26,7 +26,7 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         .header {
-            background: linear-gradient(135deg, #1e3a8a 0%, #1e293b 100%);
+            background: linear-gradient(135deg, #0f766e 0%, #134e4a 100%);
             color: white;
             padding: 30px 20px;
             text-align: center;
@@ -47,20 +47,20 @@
         .greeting {
             font-size: 18px;
             font-weight: 600;
-            color: #1e3a8a;
+            color: #0f766e;
             margin-bottom: 20px;
         }
         .section {
             margin-bottom: 25px;
             padding: 15px;
             background: #f8f9fa;
-            border-left: 4px solid #3b82f6;
+            border-left: 4px solid #14b8a6;
             border-radius: 4px;
         }
         .section-title {
             font-size: 16px;
             font-weight: 600;
-            color: #1e3a8a;
+            color: #0f766e;
             margin: 0 0 10px 0;
             display: flex;
             align-items: center;
@@ -94,7 +94,7 @@
         }
         .cta-button {
             display: inline-block;
-            background: #3b82f6;
+            background: #14b8a6;
             color: white;
             padding: 10px 20px;
             text-decoration: none;
@@ -103,11 +103,11 @@
             margin: 10px 0;
         }
         .cta-button:hover {
-            background: #1e3a8a;
+            background: #0f766e;
         }
         .info-box {
             background: #dbeafe;
-            border-left: 4px solid #3b82f6;
+            border-left: 4px solid #14b8a6;
             padding: 12px;
             margin: 15px 0;
             border-radius: 4px;
@@ -137,7 +137,7 @@
         <div class="email-wrapper">
             <!-- HEADER -->
             <div class="header">
-                <h1>📧 Daily School Update</h1>
+                    <h1>📧 Daily School Update</h1>
                 <p>{{ current_date }}</p>
             </div>
 
@@ -153,10 +153,27 @@
                 {% if timetable %}
                 <div class="section">
                     <div class="section-title">
-                        <span class="emoji">📚</span> Today's Timetable
+                        <span class="emoji">📚</span> {{ timetable_label or "Today's Timetable" }}
                     </div>
                     <div class="section-content">
-                        {{ timetable }}
+                        <table style="width:100%; border-collapse: collapse;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left; padding:8px; border-bottom:1px solid #d1d5db;">Period</th>
+                                    <th style="text-align:left; padding:8px; border-bottom:1px solid #d1d5db;">Subject</th>
+                                    <th style="text-align:left; padding:8px; border-bottom:1px solid #d1d5db;">Room</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for entry in timetable %}
+                                <tr>
+                                    <td style="padding:8px; border-bottom:1px solid #e5e7eb; font-weight:600;">Period {{ entry.period }}</td>
+                                    <td style="padding:8px; border-bottom:1px solid #e5e7eb;">{{ entry.subject or '—' }}</td>
+                                    <td style="padding:8px; border-bottom:1px solid #e5e7eb;">{{ entry.room or '—' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
                 {% endif %}
@@ -180,7 +197,11 @@
                         <span class="emoji">📅</span> Today's Events
                     </div>
                     <div class="section-content">
-                        {{ events }}
+                        <ul>
+                            {% for event in events %}
+                            <li>{{ event }}</li>
+                            {% endfor %}
+                        </ul>
                     </div>
                 </div>
                 {% endif %}
@@ -192,7 +213,11 @@
                         <span class="emoji">📢</span> Important Updates
                     </div>
                     <div class="section-content">
-                        {{ updates }}
+                        <ul>
+                            {% for update in updates %}
+                            <li>{{ update }}</li>
+                            {% endfor %}
+                        </ul>
                     </div>
                 </div>
                 {% endif %}
@@ -218,7 +243,7 @@
                 <p>
                     📧 AS Updates • Daily School Information Service<br>
                     <strong>Email sent:</strong> {{ sent_datetime }}<br>
-                    <a href="{{ unsubscribe_url }}" style="color: #3b82f6; text-decoration: none;">Manage Email Preferences</a>
+                    <a href="{{ unsubscribe_url }}" style="color: #14b8a6; text-decoration: none;">Manage Email Preferences</a>
                 </p>
             </div>
         </div>

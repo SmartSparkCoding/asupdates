@@ -78,7 +78,7 @@ The application will:
 - Only sends to enabled users
 
 ### ✅ UI/UX
-- Modern clean design (navy + white)
+- Modern clean design (teal green + white)
 - Responsive mobile layout
 - Professional cards and components
 - Flash message alerts

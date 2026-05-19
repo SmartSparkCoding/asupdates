@@ -110,7 +110,7 @@
 ## Frontend Templates ✅
 
 ### Login Page (login.html)
-- ✅ Modern design (navy + white)
+- ✅ Modern design (teal green + white)
 - ✅ User login tab
 - ✅ Admin login tab
 - ✅ Flash message display
@@ -177,7 +177,7 @@
 ## Styling (style.css) ✅
 
 ### Design System
-- ✅ Navy (#1e3a8a) + white color scheme
+- ✅ Teal green (#0f766e) + white color scheme
 - ✅ Rounded cards (12px border-radius)
 - ✅ Modern typography
 - ✅ Consistent spacing
@@ -385,3 +385,9 @@ All required features have been implemented:
 ---
 
 Last Updated: 2024-05-18
+
+## Current Session Addendum
+- User dashboards now allow editing name, email, PIN, and Week A / Week B timetable data.
+- Admin dashboards now include per-user profile pages, an email preview/send prompt, holiday weeks, and a 3-week menu rota editor.
+- The email template now renders from live user data so preview and send output match.
+- The visual theme now uses teal-green accents across the app.

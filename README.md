@@ -18,16 +18,19 @@ A modern, production-ready Flask application for sending personalized daily scho
 - Admin panel with password protection
 
 ### 📊 User Dashboard
-- View account information
+- Edit name, email, and PIN from the account area
+- Enter Week A and Week B timetables for periods 1 to 7
 - Toggle email notifications on/off
 - Check current week schedule (A/B)
-- View holiday mode status
+- View holiday mode status and current menu week
 - Help and information section
 
 ### 🎛️ Admin Dashboard
-- Manage all users (add, delete, toggle emails)
-- Set holiday mode (pauses all email sending)
+- Manage all users (add, delete, profile, email preview, send emails)
+- Edit each user’s full profile, including PIN and timetable
+- Set holiday mode with a week-count prompt
 - Manage AB week schedule
+- Manage the 3-week lunch rota and active menu week
 - Send test emails
 - Monitor system status
 - API status endpoint
@@ -41,6 +44,7 @@ A modern, production-ready Flask application for sending personalized daily scho
   - Events and announcements
   - Lunch menu information
   - Custom updates
+- Preview the exact per-user HTML email before sending
 - Automatic scheduling
 
 ### 📅 Smart Scheduler
@@ -51,7 +55,7 @@ A modern, production-ready Flask application for sending personalized daily scho
 - No manual intervention needed
 
 ### 🎨 Modern UI
-- Clean, professional design (Navy + White)
+- Clean, professional design (Teal Green + White)
 - Responsive mobile layout
 - Intuitive navigation
 - Flash message alerts
@@ -184,6 +188,8 @@ as-updates/
     ├── pin.html              # PIN verification
     ├── dashboard.html        # User dashboard
     ├── admin.html            # Admin dashboard
+   ├── admin_profile.html    # Full user profile editor
+   ├── admin_email_prompt.html # Preview/send prompt for email actions
     ├── error.html            # Error pages
     └── email.html            # Email template
 ```
@@ -196,8 +202,11 @@ as-updates/
 ```sql
 id           INTEGER PRIMARY KEY AUTOINCREMENT
 email        TEXT UNIQUE NOT NULL
+name         TEXT DEFAULT ''
 pin          TEXT (nullable)
 send_emails  INTEGER DEFAULT 1
+timetable_a   TEXT DEFAULT ''
+timetable_b   TEXT DEFAULT ''
 created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ```
 
@@ -205,7 +214,12 @@ created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ```sql
 id            INTEGER PRIMARY KEY
 holiday_mode  INTEGER DEFAULT 0
+holiday_weeks INTEGER DEFAULT 0
 ab_week       TEXT DEFAULT 'A'
+menu_week     INTEGER DEFAULT 1
+menu_week_1   TEXT DEFAULT ''
+menu_week_2   TEXT DEFAULT ''
+menu_week_3   TEXT DEFAULT ''
 ```
 
 ---
@@ -220,16 +234,20 @@ ab_week       TEXT DEFAULT 'A'
 
 ### Protected Routes (Require Login)
 - `GET /dashboard` - User dashboard
+- `POST /dashboard/update-account` - Update account info and timetables
 - `POST /toggle-emails` - Toggle email preferences
 - `GET /pin` - PIN verification page
 
 ### Admin Routes (Require Admin Password)
 - `GET /admin` - Admin dashboard
 - `POST /admin/add-user` - Add new user
+- `GET/POST /admin/user/<id>` - Full user profile editor
+- `GET /admin/email/<id>` - On-site email preview/send prompt
+- `GET /admin/email-preview/<id>` - Render the filled HTML email in a new tab
 - `POST /admin/delete-user/<id>` - Delete user
-- `POST /admin/toggle-user-emails/<id>` - Toggle user emails
 - `POST /admin/toggle-holiday` - Toggle holiday mode
 - `POST /admin/set-week/<A|B>` - Set AB week
+- `POST /admin/menu-settings` - Save the 3-week lunch rota
 - `POST /admin/test-email` - Send test email
 
 ### API Endpoints

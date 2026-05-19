@@ -1,7 +1,42 @@
-import sqlite3
+import json
 import os
-from datetime import datetime
+import sqlite3
+
 from config import DATABASE
+
+
+TIMETABLE_PERIODS = [str(period) for period in range(1, 8)]
+
+
+def _default_timetable():
+    return {period: {"subject": "", "room": ""} for period in TIMETABLE_PERIODS}
+
+
+def _ensure_column(conn, table, column, definition):
+    cursor = conn.cursor()
+    cursor.execute(f"PRAGMA table_info({table})")
+    existing_columns = {row[1] for row in cursor.fetchall()}
+
+    if column not in existing_columns:
+        cursor.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+
+
+def _ensure_settings_row(conn):
+    cursor = conn.cursor()
+    cursor.execute("SELECT id FROM settings WHERE id=1")
+    if cursor.fetchone() is None:
+        cursor.execute(
+            """
+            INSERT INTO settings (id, holiday_mode, holiday_weeks, ab_week, menu_week, menu_week_1, menu_week_2, menu_week_3)
+            VALUES (1, 0, 0, 'A', 1, '', '', '')
+            """
+        )
+
+
+def _ensure_user_defaults(conn):
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET name = COALESCE(name, ''), timetable_a = COALESCE(timetable_a, ''), timetable_b = COALESCE(timetable_b, '')")
+    conn.commit()
 
 def get_db():
     """Get database connection with row factory."""
@@ -22,36 +57,40 @@ def init_db():
     try:
         # Enable foreign keys
         c.execute("PRAGMA foreign_keys = ON")
-        
-        # Drop existing tables if they exist (clean slate)
-        c.execute("DROP TABLE IF EXISTS users")
-        c.execute("DROP TABLE IF EXISTS settings")
-        
-        # Create users table
-        c.execute("""
-        CREATE TABLE users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE NOT NULL,
-            pin TEXT,
-            send_emails INTEGER DEFAULT 1,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT UNIQUE NOT NULL,
+                name TEXT DEFAULT '',
+                pin TEXT,
+                send_emails INTEGER DEFAULT 1,
+                timetable_a TEXT DEFAULT '',
+                timetable_b TEXT DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
         )
-        """)
-        
-        # Create settings table
-        c.execute("""
-        CREATE TABLE settings (
-            id INTEGER PRIMARY KEY,
-            holiday_mode INTEGER DEFAULT 0,
-            ab_week TEXT DEFAULT 'A'
+
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS settings (
+                id INTEGER PRIMARY KEY,
+                holiday_mode INTEGER DEFAULT 0,
+                holiday_weeks INTEGER DEFAULT 0,
+                ab_week TEXT DEFAULT 'A',
+                menu_week INTEGER DEFAULT 1,
+                menu_week_1 TEXT DEFAULT '',
+                menu_week_2 TEXT DEFAULT '',
+                menu_week_3 TEXT DEFAULT ''
+            )
+            """
         )
-        """)
-        
-        # Insert default settings
-        c.execute("""
-        INSERT INTO settings (id, holiday_mode, ab_week)
-        VALUES (1, 0, 'A')
-        """)
+
+        c.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)")
+
+        _ensure_settings_row(conn)
         
         conn.commit()
         print("[✓] Database initialized successfully")
@@ -69,27 +108,51 @@ def verify_schema():
     try:
         conn = get_db()
         c = conn.cursor()
-        
-        # Check users table
-        c.execute("PRAGMA table_info(users)")
-        users_cols = {row[1] for row in c.fetchall()}
-        required_users = {"id", "email", "pin", "send_emails", "created_at"}
-        
-        # Check settings table
-        c.execute("PRAGMA table_info(settings)")
-        settings_cols = {row[1] for row in c.fetchall()}
-        required_settings = {"id", "holiday_mode", "ab_week"}
-        
+
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                email TEXT UNIQUE NOT NULL,
+                name TEXT DEFAULT '',
+                pin TEXT,
+                send_emails INTEGER DEFAULT 1,
+                timetable_a TEXT DEFAULT '',
+                timetable_b TEXT DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS settings (
+                id INTEGER PRIMARY KEY,
+                holiday_mode INTEGER DEFAULT 0,
+                holiday_weeks INTEGER DEFAULT 0,
+                ab_week TEXT DEFAULT 'A',
+                menu_week INTEGER DEFAULT 1,
+                menu_week_1 TEXT DEFAULT '',
+                menu_week_2 TEXT DEFAULT '',
+                menu_week_3 TEXT DEFAULT ''
+            )
+            """
+        )
+
+        _ensure_column(conn, "users", "name", "TEXT DEFAULT ''")
+        _ensure_column(conn, "users", "timetable_a", "TEXT DEFAULT ''")
+        _ensure_column(conn, "users", "timetable_b", "TEXT DEFAULT ''")
+        _ensure_column(conn, "settings", "holiday_weeks", "INTEGER DEFAULT 0")
+        _ensure_column(conn, "settings", "menu_week", "INTEGER DEFAULT 1")
+        _ensure_column(conn, "settings", "menu_week_1", "TEXT DEFAULT ''")
+        _ensure_column(conn, "settings", "menu_week_2", "TEXT DEFAULT ''")
+        _ensure_column(conn, "settings", "menu_week_3", "TEXT DEFAULT ''")
+
+        _ensure_settings_row(conn)
+        _ensure_user_defaults(conn)
+
+        conn.commit()
+
         conn.close()
-        
-        users_ok = required_users.issubset(users_cols)
-        settings_ok = required_settings.issubset(settings_cols)
-        
-        if not users_ok or not settings_ok:
-            print("[!] Schema mismatch detected - reinitializing...")
-            init_db()
-            return False
-        
         return True
         
     except Exception as e:

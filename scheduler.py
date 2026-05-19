@@ -4,39 +4,73 @@ from datetime import datetime
 import pytz
 from db import get_db
 from emailer import send_email
+from email_templates import parse_timetable, render_email_html, timetable_rows
 from config import TIMEZONE, SCHEDULER_ENABLED
 
 
+def _row_to_dict(row):
+    if not row:
+        return {}
+    return {key: row[key] for key in row.keys()}
+
+
+def _settings_defaults(settings):
+    settings = settings or {}
+    return {
+        "holiday_mode": settings.get("holiday_mode", 0),
+        "holiday_weeks": settings.get("holiday_weeks", 0),
+        "ab_week": settings.get("ab_week", "A"),
+        "menu_week": settings.get("menu_week", 1),
+        "menu_week_1": settings.get("menu_week_1", ""),
+        "menu_week_2": settings.get("menu_week_2", ""),
+        "menu_week_3": settings.get("menu_week_3", ""),
+    }
+
+
+def _build_email_context(user, settings):
+    current_week = settings.get("ab_week", "A")
+    timetable_raw = user.get("timetable_a", "") if current_week == "A" else user.get("timetable_b", "")
+    timetable = parse_timetable(timetable_raw)
+    menu_week = max(1, min(3, int(settings.get("menu_week", 1) or 1)))
+    menu_text = settings.get(f"menu_week_{menu_week}", "")
+    display_name = user.get("name") or user.get("email", "").split("@")[0].replace(".", " ").title() or "Student"
+
+    return {
+        "name": display_name,
+        "current_date": datetime.now().strftime("%A, %d %B %Y"),
+        "sent_datetime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "timetable": timetable_rows(timetable),
+        "timetable_label": f"Week {current_week}",
+        "timetable_week": current_week,
+        "lunch": menu_text,
+        "menu_week": menu_week,
+        "events": [
+            f"Holiday mode: {'ON' if settings.get('holiday_mode') == 1 else 'OFF'}",
+            f"Current rota week: {menu_week}",
+        ],
+        "updates": [
+            f"Email updates are {'enabled' if user.get('send_emails', 1) == 1 else 'disabled'} for this account.",
+            "Open the dashboard to update your timetable or account details.",
+        ],
+        "unsubscribe_url": "https://ashfordschool.co.uk",
+    }
+
+
 def generate_email_html(user_email):
-    """Generate personalized email HTML for user."""
-    html = f"""
-    <html>
-        <body style="font-family: Arial, sans-serif; color: #333;">
-            <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-                <h2 style="color: #1e3a8a;">📧 Daily School Update</h2>
-                
-                <p>Hello,</p>
-                
-                <p>Here is your daily update for today:</p>
-                
-                <div style="background: #f8f9fa; padding: 15px; border-left: 4px solid #1e3a8a; margin: 20px 0;">
-                    <h3 style="margin-top: 0;">📅 Today's Schedule</h3>
-                    <p>Check the portal for your updated timetable and events.</p>
-                </div>
-                
-                <div style="background: #f8f9fa; padding: 15px; border-left: 4px solid #1e3a8a; margin: 20px 0;">
-                    <h3 style="margin-top: 0;">🍽️ Lunch Menu</h3>
-                    <p>Available in the canteen.</p>
-                </div>
-                
-                <p style="color: #666; margin-top: 30px; font-size: 12px;">
-                    Sent: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
-                </p>
-            </div>
-        </body>
-    </html>
-    """
-    return html
+    """Generate personalized email HTML for a specific user email."""
+
+    db = get_db()
+    c = db.cursor()
+    c.execute("SELECT id, email, name, pin, send_emails, timetable_a, timetable_b, created_at FROM users WHERE email=?", (user_email,))
+    user = _row_to_dict(c.fetchone())
+    c.execute("SELECT id, holiday_mode, holiday_weeks, ab_week, menu_week, menu_week_1, menu_week_2, menu_week_3 FROM settings WHERE id=1")
+    settings = _settings_defaults(_row_to_dict(c.fetchone()))
+    db.close()
+
+    if not user:
+        return ""
+
+    return render_email_html(_build_email_context(user, settings))
 
 
 def send_daily_emails():
@@ -63,8 +97,10 @@ def send_daily_emails():
             return
         
         # Get all users with send_emails enabled
-        c.execute("SELECT id, email FROM users WHERE send_emails = 1")
+        c.execute("SELECT id, email, name, pin, send_emails, timetable_a, timetable_b, created_at FROM users WHERE send_emails = 1")
         users = c.fetchall()
+        c.execute("SELECT id, holiday_mode, holiday_weeks, ab_week, menu_week, menu_week_1, menu_week_2, menu_week_3 FROM settings WHERE id=1")
+        settings = _settings_defaults(_row_to_dict(c.fetchone()))
         db.close()
         
         if not users:
@@ -74,8 +110,9 @@ def send_daily_emails():
         # Send email to each user
         success_count = 0
         for user in users:
-            user_id, email = user if isinstance(user, tuple) else (user['id'], user['email'])
-            html = generate_email_html(email)
+            user_record = _row_to_dict(user)
+            email = user_record.get("email")
+            html = render_email_html(_build_email_context(user_record, settings))
             
             if send_email(email, "AS Updates - Daily School Update", html):
                 success_count += 1

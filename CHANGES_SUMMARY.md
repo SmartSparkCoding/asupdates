@@ -3,6 +3,13 @@
 ## Overview
 Complete rebuild of the AS Updates Flask + SQLite + Email Scheduling System from broken state to production-ready application.
 
+## Current Session Update
+- Added editable user account details on the dashboard, including name, email, PIN, and Week A / Week B timetables.
+- Added full admin profile pages so each user can be viewed and edited in detail.
+- Added an on-site email prompt with preview-in-new-tab and send-now actions for individual users.
+- Added holiday mode duration input and 3-week lunch rota management on the admin dashboard.
+- Switched the interface theme from blue to teal-green across the app and email template.
+
 ## Files Modified/Created
 
 ### Core Application Files
@@ -77,12 +84,30 @@ Complete rebuild of the AS Updates Flask + SQLite + Email Scheduling System from
   - Werkzeug==3.0.0
   - pytz==2024.1
 
+#### 7. **email_templates.py** ✅
+- **Status**: NEW
+- **Changes**:
+  - Shared Jinja2 renderer for the HTML email template
+  - Timetable helpers for Week A / Week B data
+
+#### 8. **templates/admin_profile.html** ✅
+- **Status**: NEW
+- **Changes**:
+  - Full user profile editor
+  - Edit email, name, PIN, and timetable data
+
+#### 9. **templates/admin_email_prompt.html** ✅
+- **Status**: NEW
+- **Changes**:
+  - On-site email action prompt
+  - Preview the exact HTML email in a new tab before sending
+
 ### Frontend Files
 
 #### 7. **templates/login.html** ✅
 - **Status**: REDESIGNED
 - **Changes**:
-  - Modern navy + white design
+  - Modern teal-green + white design
   - Dual tabs (User Login / Admin Login)
   - Responsive layout
   - Flash message display
@@ -169,7 +194,7 @@ Complete rebuild of the AS Updates Flask + SQLite + Email Scheduling System from
 #### 14. **static/style.css** ✅
 - **Status**: COMPLETELY REDESIGNED
 - **Changes**:
-  - Modern design system (navy #1e3a8a + white)
+  - Modern design system (teal green #0f766e + white)
   - 600+ lines of organized CSS
   - Component-based styling
   - Responsive breakpoints (768px, 480px)

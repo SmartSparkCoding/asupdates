@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AS Updates - Login</title>
+    <title>Ashford School Updates</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div class="container login-container">
         <div class="form-card">
             <div class="card-header">
-                <h1>📧 AS Updates</h1>
-                <p class="subtitle">School Schedule & Email Updates</p>
+                <h1>📧 Ashford School Updates</h1>
+                <p class="subtitle">School schedule, timetable, and email updates</p>
             </div>
 
             {% if get_flashed_messages() %}
@@ -21,8 +21,8 @@
             {% endif %}
 
             <div class="tabs">
-                <button class="tab-btn active" onclick="showTab('user-login')">User Login</button>
-                <button class="tab-btn" onclick="showTab('admin-login')">Admin</button>
+                <button class="tab-btn active" onclick="showTab(event, 'user-login')">User Login</button>
+                <button class="tab-btn" onclick="showTab(event, 'admin-login')">Admin</button>
             </div>
 
             <!-- USER LOGIN TAB -->
@@ -73,10 +73,20 @@
             <h3>🔒 Secure & Private</h3>
             <p>Your school data is protected and only sent during scheduled times.</p>
         </div>
+
+        <details class="more-info form-card">
+            <summary class="btn btn-secondary btn-large">More Info</summary>
+            <div class="more-info-content">
+                <div class="info-box">
+                    <h3>What is this app?</h3>
+                    <p>Ashford School Updates lets students and staff manage contact details, timetable entries, PIN security, and personalised email updates from one place.</p>
+                </div>
+            </div>
+        </details>
     </div>
 
     <script>
-        function showTab(tabName) {
+        function showTab(event, tabName) {
             // Hide all tabs
             document.querySelectorAll('.tab-content').forEach(tab => {
                 tab.classList.remove('active');
@@ -87,7 +97,7 @@
             
             // Show selected tab
             document.getElementById(tabName).classList.add('active');
-            event.target.classList.add('active');
+            event.currentTarget.classList.add('active');
         }
     </script>
 </body>

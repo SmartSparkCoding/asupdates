@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - AS Updates</title>
+    <title>Dashboard - Ashford School Updates</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -23,28 +23,84 @@
     {% endif %}
 
     <div class="container">
-        <!-- Account Info Card -->
+        <!-- Account Info + Timetable Card -->
         <div class="card">
             <div class="card-header">
                 <h3>👤 Account Information</h3>
             </div>
             <div class="card-body">
-                <div class="info-row">
-                    <span class="label">Email:</span>
-                    <span class="value">{{ email }}</span>
-                </div>
-                <div class="info-row">
-                    <span class="label">Email Updates:</span>
-                    <span class="value">
-                        {% if send_emails == 1 %}
-                            <span class="badge badge-success">✓ Enabled</span>
-                        {% else %}
-                            <span class="badge badge-secondary">✗ Disabled</span>
-                        {% endif %}
-                    </span>
-                </div>
+                <form method="POST" action="/dashboard/update-account" class="form-group">
+                    <div class="account-grid">
+                        <div class="form-item">
+                            <label for="name">Name</label>
+                            <input type="text" id="name" name="name" value="{{ name }}" placeholder="Your name">
+                        </div>
+                        <div class="form-item">
+                            <label for="email">Email</label>
+                            <input type="email" id="email" name="email" value="{{ email }}" required>
+                        </div>
+                        <div class="form-item">
+                            <label for="pin">New PIN</label>
+                            <input type="password" id="pin" name="pin" placeholder="Leave blank to keep current PIN">
+                            <small class="help-text">Enter a new PIN here to change it.</small>
+                        </div>
+                    </div>
+
+                    <p class="card-description">Update your personal details and timetable below. Period 1 to 7 are required for both weeks.</p>
+
+                    <div class="timetable-grid">
+                        <div class="timetable-panel">
+                            <h4>Week A</h4>
+                            <table class="timetable-table">
+                                <thead>
+                                    <tr>
+                                        <th>Period</th>
+                                        <th>Subject</th>
+                                        <th>Room</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for period in timetable_periods %}
+                                        {% set period_key = period|string %}
+                                        <tr>
+                                            <td class="period-cell">{{ period }}</td>
+                                            <td><input type="text" name="timetable_a_{{ period }}_subject" value="{{ timetable_a[period_key]['subject'] }}"></td>
+                                            <td><input type="text" name="timetable_a_{{ period }}_room" value="{{ timetable_a[period_key]['room'] }}"></td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="timetable-panel">
+                            <h4>Week B</h4>
+                            <table class="timetable-table">
+                                <thead>
+                                    <tr>
+                                        <th>Period</th>
+                                        <th>Subject</th>
+                                        <th>Room</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for period in timetable_periods %}
+                                        {% set period_key = period|string %}
+                                        <tr>
+                                            <td class="period-cell">{{ period }}</td>
+                                            <td><input type="text" name="timetable_b_{{ period }}_subject" value="{{ timetable_b[period_key]['subject'] }}"></td>
+                                            <td><input type="text" name="timetable_b_{{ period }}_room" value="{{ timetable_b[period_key]['room'] }}"></td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-large">Save Account & Timetable</button>
+                </form>
+
                 {% if holiday_mode == 1 %}
-                    <div class="holiday-alert">
+                    <div class="holiday-alert" style="margin-top: 20px;">
                         <strong>🏖️ Holiday Mode Active</strong>
                         <p>Emails are currently paused for the holiday period.</p>
                     </div>
@@ -92,6 +148,10 @@
                     <span class="week-badge">Week {{ ab_week }}</span>
                 </div>
                 <p class="help-text">This is set by your school administrator.</p>
+                <div class="menu-current" style="margin-top: 15px;">
+                    <strong>Lunch rota week:</strong> Week {{ menu_week }}
+                    <p style="margin-top: 8px;">Your school menu is managed by the admin dashboard.</p>
+                </div>
             </div>
         </div>
 
@@ -106,6 +166,7 @@
                     <li>🔐 Use a PIN for extra security during login</li>
                     <li>📅 Emails are only sent on weekdays</li>
                     <li>🏖️ Holiday mode pauses all emails during breaks</li>
+                    <li>🗓️ Add both Week A and Week B timetables to keep emails personalised</li>
                 </ul>
             </div>
         </div>

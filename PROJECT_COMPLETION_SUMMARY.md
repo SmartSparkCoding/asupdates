@@ -95,7 +95,7 @@ The AS Updates Flask + SQLite + Email Scheduling System has been completely rebu
   - error.html (styled error pages)
   - email.html (email template)
 - Comprehensive CSS styling:
-  - Navy + white color scheme
+  - Teal green + white color scheme
   - Rounded cards with shadows
   - Responsive design (mobile-first)
   - Professional typography
@@ -283,7 +283,7 @@ The AS Updates Flask + SQLite + Email Scheduling System has been completely rebu
 - [x] Proper logging
 
 ### ✅ UI/UX (100%)
-- [x] Modern design (navy + white)
+- [x] Modern design (teal green + white)
 - [x] Responsive layout
 - [x] Flash messages
 - [x] Professional cards
@@ -546,7 +546,7 @@ All documentation is included in the project:
 
 1. **✅ Complete Rebuild** - From broken state to production-ready
 2. **✅ Zero Bugs** - Comprehensive error handling
-3. **✅ Modern UI** - Professional navy + white design
+3. **✅ Modern UI** - Professional teal-green + white design
 4. **✅ Full Features** - All requirements implemented
 5. **✅ Security** - Proper authentication & authorization
 6. **✅ Documentation** - Complete guides and checklists
@@ -558,6 +558,12 @@ All documentation is included in the project:
 ---
 
 ## Final Checklist
+
+## Current Session Addendum
+- User dashboards now support editing name, email, PIN, and Week A / Week B timetables directly from the account area.
+- Admin dashboards now include per-user profile pages, a preview/send email prompt, holiday weeks, and a 3-week menu rota editor.
+- The email template is now rendered from live user data so browser previews match the exact outgoing HTML.
+- The visual theme has been moved from blue accents to teal-green across the app and email template.
 
 - [x] Code complete and tested
 - [x] Database schema finalized
