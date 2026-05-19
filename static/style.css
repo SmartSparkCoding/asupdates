@@ -372,8 +372,7 @@ a:hover {
     width: min(1100px, 100%);
 }
 
-.modal-toggle:checked + .btn + .modal-overlay,
-.modal-toggle:checked ~ .modal-overlay {
+.modal-toggle:checked + .btn + .modal-overlay {
     display: flex;
 }
 
@@ -391,6 +390,9 @@ a:hover {
     display: flex !important;
 }
 #menu-modal-toggle:checked ~ .menu-modal {
+    display: flex !important;
+}
+#more-info-toggle:checked ~ .info-modal {
     display: flex !important;
 }
 
