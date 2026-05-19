@@ -35,6 +35,12 @@ from email_templates import (
 # Load environment variables
 load_dotenv()
 
+# Admin emails that have access to admin dashboard
+ADMIN_EMAILS = [
+    "NavaratneJ@ashpupil.co.uk",
+    "MooreF@ashpupil.co.uk",
+]
+
 # Initialize Flask app
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
@@ -276,7 +282,9 @@ def server_error(error):
 @app.route("/")
 def home():
     """Landing page - redirect based on session."""
-    if "is_admin" in session and session["is_admin"]:
+    if "is_admin_email" in session and session["is_admin_email"]:
+        return redirect(url_for("dashboard_choice"))
+    elif "is_admin" in session and session["is_admin"]:
         return redirect(url_for("admin_dashboard"))
     elif "user_id" in session:
         return redirect(url_for("dashboard"))
@@ -387,11 +395,21 @@ def login():
             # No PIN - log in directly
             session["user_id"] = user_id
             session["user_email"] = email
-            session["is_admin"] = False
             session["login_time"] = datetime.now().isoformat()
             
-            flash("Logged in successfully", "success")
-            return redirect(url_for("dashboard"))
+            # Check if this email is an admin email
+            is_admin_email = email.lower() in [admin_email.lower() for admin_email in ADMIN_EMAILS]
+            
+            if is_admin_email:
+                # Admin user without PIN - show dashboard choice
+                session["is_admin_email"] = True
+                flash("Logged in successfully", "success")
+                return redirect(url_for("dashboard_choice"))
+            else:
+                # Normal user - go straight to dashboard
+                session["is_admin"] = False
+                flash("Logged in successfully", "success")
+                return redirect(url_for("dashboard"))
             
         except Exception as e:
             print(f"[✗] Login error: {e}")
@@ -438,15 +456,25 @@ def pin_verify():
             # PIN correct - log in
             session["user_id"] = temp_user_id
             session["user_email"] = temp_user_email
-            session["is_admin"] = False
             session["login_time"] = datetime.now().isoformat()
             
-            # Clear temp session data
-            session.pop("temp_user_id", None)
-            session.pop("temp_user_email", None)
+            # Check if this email is an admin email
+            is_admin_email = temp_user_email.lower() in [email.lower() for email in ADMIN_EMAILS]
             
-            flash("Logged in successfully", "success")
-            return redirect(url_for("dashboard"))
+            if is_admin_email:
+                # Admin user - show dashboard choice
+                session["is_admin_email"] = True
+                session.pop("temp_user_id", None)
+                session.pop("temp_user_email", None)
+                flash("Logged in successfully", "success")
+                return redirect(url_for("dashboard_choice"))
+            else:
+                # Normal user - go straight to dashboard
+                session["is_admin"] = False
+                session.pop("temp_user_id", None)
+                session.pop("temp_user_email", None)
+                flash("Logged in successfully", "success")
+                return redirect(url_for("dashboard"))
             
         except Exception as e:
             print(f"[✗] PIN verification error: {e}")
@@ -454,6 +482,42 @@ def pin_verify():
             return redirect(url_for("pin_verify"))
     
     return render_template("pin.html", email=temp_user_email)
+
+
+@app.route("/dashboard/choice")
+def dashboard_choice():
+    """Dashboard choice page for admin users."""
+    if "user_id" not in session or not session.get("is_admin_email"):
+        flash("Invalid request", "danger")
+        return redirect(url_for("login"))
+    
+    return render_template("dashboard_choice.html", email=session.get("user_email"))
+
+
+@app.route("/dashboard/choice/admin", methods=["POST"])
+def dashboard_choice_admin():
+    """Redirect to admin dashboard."""
+    if "user_id" not in session or not session.get("is_admin_email"):
+        flash("Invalid request", "danger")
+        return redirect(url_for("login"))
+    
+    session["is_admin"] = True
+    session.pop("is_admin_email", None)
+    flash("Switched to Admin Dashboard", "success")
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/dashboard/choice/normal", methods=["POST"])
+def dashboard_choice_normal():
+    """Redirect to normal user dashboard."""
+    if "user_id" not in session:
+        flash("Invalid request", "danger")
+        return redirect(url_for("login"))
+    
+    session["is_admin"] = False
+    session.pop("is_admin_email", None)
+    flash("Switched to User Dashboard", "success")
+    return redirect(url_for("dashboard"))
 
 
 @app.route("/logout")
