@@ -74,15 +74,25 @@
             <p>Your school data is protected and only sent during scheduled times.</p>
         </div>
 
-        <details class="more-info form-card">
-            <summary class="btn btn-secondary btn-large">More Info</summary>
-            <div class="more-info-content">
-                <div class="info-box">
-                    <h3>What is this app?</h3>
-                    <p>Ashford School Updates lets students and staff manage contact details, timetable entries, PIN security, and personalised email updates from one place.</p>
+        <div class="more-info-wrap">
+            <input type="checkbox" id="more-info-toggle" class="modal-toggle">
+            <label for="more-info-toggle" class="btn btn-secondary btn-large more-info-trigger">More Info</label>
+
+            <div class="modal-overlay info-modal">
+                <div class="modal-shell">
+                    <div class="modal-header">
+                        <h3>What is this app?</h3>
+                        <label for="more-info-toggle" class="modal-close">Close</label>
+                    </div>
+                    <div class="modal-body">
+                        <p>Ashford School Updates lets students and staff manage contact details, timetable entries, PIN security, and personalised email updates from one place.</p>
+                        <div class="info-box" style="margin-top: 16px;">
+                            <p>Use the login tabs to access your account or the admin panel, then update your profile details from the dashboard or admin profile page.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </details>
+        </div>
     </div>
 
     <script>

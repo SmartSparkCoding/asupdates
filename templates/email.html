@@ -149,29 +149,31 @@
 
                 <p>Here's your personalized daily school update for today:</p>
 
-                <!-- TIMETABLE SECTION -->
-                {% if timetable %}
+                <!-- DAY SCHEDULE SECTION -->
+                {% if day_schedule %}
                 <div class="section">
                     <div class="section-title">
-                        <span class="emoji">📚</span> {{ timetable_label or "Today's Timetable" }}
+                        <span class="emoji">📚</span> {{ day_name or "Today's Schedule" }}
                     </div>
                     <div class="section-content">
                         <table style="width:100%; border-collapse: collapse;">
-                            <thead>
-                                <tr>
-                                    <th style="text-align:left; padding:8px; border-bottom:1px solid #d1d5db;">Period</th>
-                                    <th style="text-align:left; padding:8px; border-bottom:1px solid #d1d5db;">Subject</th>
-                                    <th style="text-align:left; padding:8px; border-bottom:1px solid #d1d5db;">Room</th>
-                                </tr>
-                            </thead>
                             <tbody>
-                                {% for entry in timetable %}
                                 <tr>
-                                    <td style="padding:8px; border-bottom:1px solid #e5e7eb; font-weight:600;">Period {{ entry.period }}</td>
-                                    <td style="padding:8px; border-bottom:1px solid #e5e7eb;">{{ entry.subject or '—' }}</td>
-                                    <td style="padding:8px; border-bottom:1px solid #e5e7eb;">{{ entry.room or '—' }}</td>
+                                    <td style="padding:8px; border-bottom:1px solid #e5e7eb; font-weight:600; width:35%;">Before school</td>
+                                    <td style="padding:8px; border-bottom:1px solid #e5e7eb;">{{ day_schedule.before_school or '—' }}</td>
                                 </tr>
-                                {% endfor %}
+                                <tr>
+                                    <td style="padding:8px; border-bottom:1px solid #e5e7eb; font-weight:600;">Break time</td>
+                                    <td style="padding:8px; border-bottom:1px solid #e5e7eb;">{{ day_schedule.break_time or '—' }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px; border-bottom:1px solid #e5e7eb; font-weight:600;">Lunch time</td>
+                                    <td style="padding:8px; border-bottom:1px solid #e5e7eb;">{{ day_schedule.lunch_time or '—' }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:8px; border-bottom:1px solid #e5e7eb; font-weight:600;">After school</td>
+                                    <td style="padding:8px; border-bottom:1px solid #e5e7eb;">{{ day_schedule.after_school or '—' }}</td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
@@ -239,7 +241,7 @@
                 {% endif %}
 
                 <!-- DEFAULT CONTENT -->
-                {% if not timetable and not lunch and not events and not updates %}
+                {% if not day_schedule and not lunch and not events and not updates %}
                 <div class="info-box">
                     <strong>📋 No Special Updates Today</strong>
                     <p>Your timetable and schedule information are available in your school portal.</p>

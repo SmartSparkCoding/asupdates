@@ -188,6 +188,8 @@ a:hover {
 .form-item select,
 .timetable-table input,
 .timetable-table textarea,
+.schedule-table input,
+.schedule-table textarea,
 .menu-textarea {
     width: 100%;
     padding: 10px 12px;
@@ -204,6 +206,8 @@ a:hover {
 .form-item select:focus,
 .timetable-table input:focus,
 .timetable-table textarea:focus,
+.schedule-table input:focus,
+.schedule-table textarea:focus,
 .menu-textarea:focus {
     outline: none;
     border-color: var(--navy-light);
@@ -250,6 +254,143 @@ a:hover {
 .btn-primary:hover {
     background: var(--navy);
     box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
+}
+
+/* ========================================
+   MODALS
+   ======================================== */
+
+.modal-toggle {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(15, 23, 42, 0.62);
+    backdrop-filter: blur(4px);
+}
+
+.modal-shell {
+    width: min(720px, 100%);
+    max-height: 90vh;
+    overflow: auto;
+    background: var(--white);
+    border-radius: 18px;
+    box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
+}
+
+.modal-shell-large {
+    width: min(1100px, 100%);
+}
+
+.modal-toggle:checked + .btn + .modal-overlay,
+.modal-toggle:checked ~ .modal-overlay {
+    display: flex;
+}
+
+.modal-header,
+.modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 22px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-footer {
+    border-top: 1px solid #e5e7eb;
+    border-bottom: 0;
+    justify-content: flex-end;
+}
+
+.modal-body {
+    padding: 22px;
+}
+
+.modal-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 9px 14px;
+    border-radius: 8px;
+    background: #e5e7eb;
+    color: var(--navy);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.modal-close:hover {
+    background: #d1d5db;
+    text-decoration: none;
+}
+
+.more-info-wrap {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    position: relative;
+}
+
+.more-info-trigger {
+    width: 100%;
+    max-width: 420px;
+}
+
+.schedule-editor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 18px;
+}
+
+.schedule-week-panel {
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 16px;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.schedule-table,
+.timetable-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.schedule-table th,
+.schedule-table td,
+.timetable-table th,
+.timetable-table td {
+    border-bottom: 1px solid #e5e7eb;
+    padding: 8px;
+    vertical-align: top;
+}
+
+.schedule-table th,
+.timetable-table th {
+    text-align: left;
+    color: var(--navy);
+    font-size: 0.85rem;
+}
+
+.schedule-table textarea {
+    min-height: 62px;
+    resize: vertical;
+}
+
+.schedule-preview ul {
+    padding-left: 18px;
+}
+
+.schedule-preview li {
+    margin-bottom: 6px;
 }
 
 .btn-secondary {
