@@ -15,6 +15,20 @@ environment = Environment(
 WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 SCHEDULE_FIELDS = ["before_school", "break_time", "lunch_time", "after_school"]
 
+PERIOD_TIMES = {
+    "1": "08:40 - 09:25",
+    "2": "09:30 - 10:15",
+    "3": "10:20 - 11:05",
+    "Break": "11:05 - 11:20",
+    "4": "11:25 - 12:10",
+    "5a": "12:15 - 13:00",
+    "5b / Lunch": "13:00 - 13:45",
+    "6": "14:10 - 15:00",
+    "7": "15:05 - 15:50",
+}
+
+MENU_FIELDS = ["main", "sides", "pasta_bar", "street_food", "potatoes", "soup", "vegetarian", "dessert"]
+
 
 def default_timetable():
     return {str(period): {"subject": "", "room": ""} for period in range(1, 8)}
@@ -112,5 +126,5 @@ def schedule_rows(schedule):
 
 
 def render_email_html(context):
-    template = environment.get_template("email.html")
+    template = environment.get_template("email_original.html")
     return template.render(**context)

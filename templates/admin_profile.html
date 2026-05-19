@@ -63,34 +63,34 @@
                     <div class="modal-overlay schedule-modal">
                         <div class="modal-shell modal-shell-large">
                             <div class="modal-header">
-                                <h3>Weekly Schedule Editor</h3>
+                                <h3>Period Timetable Editor (Periods 1-7)</h3>
                                 <label for="schedule-modal-toggle" class="modal-close">Close</label>
                             </div>
                             <div class="modal-body">
-                                <p class="card-description">Use Week A and Week B to set the same five school days with separate before school, break, lunch, and after school entries.</p>
+                                <p class="card-description">Edit the subject and room for each period in Week A and Week B.</p>
 
                                 <div class="schedule-editor-grid">
-                                    {% for week_label, week_data in [('Week A', user.timetable_a), ('Week B', user.timetable_b)] %}
+                                    {% for week_label, week_data in [('Week A', timetable_a), ('Week B', timetable_b)] %}
                                         <div class="schedule-week-panel">
                                             <h4>{{ week_label }}</h4>
                                             <table class="schedule-table">
                                                 <thead>
                                                     <tr>
-                                                        <th>Day</th>
-                                                        {% for field in schedule_fields %}
-                                                            <th>{{ field.replace('_', ' ')|title }}</th>
-                                                        {% endfor %}
+                                                        <th>Period</th>
+                                                        <th>Subject</th>
+                                                        <th>Room</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
-                                                    {% for day in weekdays %}
+                                                    {% for period in ['1', '2', '3', '4', '5a', '6', '7'] %}
                                                         <tr>
-                                                            <td class="period-cell">{{ day }}</td>
-                                                            {% for field in schedule_fields %}
-                                                                <td>
-                                                                    <textarea name="{{ 'timetable_a' if week_label == 'Week A' else 'timetable_b' }}_{{ day|lower }}_{{ field }}" rows="2">{{ week_data[day][field] }}</textarea>
-                                                                </td>
-                                                            {% endfor %}
+                                                            <td class="period-cell">{{ period }}</td>
+                                                            <td>
+                                                                <input type="text" name="{{ 'timetable_a' if week_label == 'Week A' else 'timetable_b' }}_{{ period }}_subject" value="{{ week_data.get(period, {}).get('subject', '') }}" placeholder="Subject">
+                                                            </td>
+                                                            <td>
+                                                                <input type="text" name="{{ 'timetable_a' if week_label == 'Week A' else 'timetable_b' }}_{{ period }}_room" value="{{ week_data.get(period, {}).get('room', '') }}" placeholder="Room">
+                                                            </td>
                                                         </tr>
                                                     {% endfor %}
                                                 </tbody>

@@ -14,6 +14,7 @@ from scheduler import start_scheduler, generate_email_html
 from email_templates import (
     WEEKDAYS,
     SCHEDULE_FIELDS,
+    PERIOD_TIMES,
     default_timetable,
     default_week_schedule,
     parse_timetable,
@@ -21,6 +22,7 @@ from email_templates import (
     render_email_html,
     schedule_day_row,
     schedule_rows,
+    serialize_timetable,
     serialize_week_schedule,
     timetable_rows,
 )
@@ -125,34 +127,64 @@ def _notice_lines(raw_notice):
     return [line for line in lines if line]
 
 
+def _parse_menu_data(menu_text):
+    """Parse menu text into structured dictionary with food types."""
+    menu_fields = ["main", "sides", "pasta_bar", "street_food", "potatoes", "soup", "vegetarian", "dessert"]
+    menu_dict = {field: "" for field in menu_fields}
+    
+    if not menu_text:
+        return menu_dict
+    
+    try:
+        data = json.loads(menu_text)
+        if isinstance(data, dict):
+            for field in menu_fields:
+                menu_dict[field] = str(data.get(field, "")).strip()
+    except (json.JSONDecodeError, TypeError):
+        # If it's not JSON, treat as plain text and put in "main" field
+        menu_dict["main"] = str(menu_text).strip()
+    
+    return menu_dict
+
+
+def _get_period_schedule(timetable):
+    """Convert timetable to period-based schedule with times."""
+    schedule = {}
+    for period in ["1", "2", "3", "4", "5a", "5b / Lunch", "6", "7"]:
+        period_data = timetable.get(period, {})
+        subject = (period_data or {}).get("subject", "").strip()
+        room = (period_data or {}).get("room", "").strip()
+        time = PERIOD_TIMES.get(period, "")
+        
+        schedule[period] = {
+            "time": time,
+            "subject": subject,
+            "room": room,
+        }
+    return schedule
+
+
 def _build_user_email_context(user, settings, external_url_base=None):
     current_week = settings.get("ab_week", "A")
-    schedule_raw = user.get("timetable_a", "") if current_week == "A" else user.get("timetable_b", "")
-    week_schedule = parse_week_schedule(schedule_raw)
+    timetable_raw = user.get("timetable_a", "") if current_week == "A" else user.get("timetable_b", "")
+    timetable = parse_timetable(timetable_raw)
+    period_schedule = _get_period_schedule(timetable)
+    
     menu_week = max(1, min(3, int(settings.get("menu_week", 1) or 1)))
     menu_text = settings.get(f"menu_week_{menu_week}", "")
+    menu_data = _parse_menu_data(menu_text)
+    
     school_notice = settings.get("school_notice", "")
     display_name = user.get("name") or user.get("email", "").split("@")[0].replace(".", " ").title() or "Student"
-    timetable_label = f"Week {current_week}"
     current_day = datetime.now().strftime("%A")
-    day_schedule = schedule_day_row(week_schedule, current_day) if current_day in WEEKDAYS else {
-        "day": current_day,
-        "before_school": "",
-        "break_time": "",
-        "lunch_time": "",
-        "after_school": "",
-    }
 
     return {
         "name": display_name,
         "current_date": datetime.now().strftime("%A, %d %B %Y"),
         "sent_datetime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "day_name": current_day,
-        "day_schedule": day_schedule,
-        "week_schedule": schedule_rows(week_schedule),
-        "timetable_label": timetable_label,
-        "timetable_week": current_week,
-        "lunch": menu_text,
+        "day_schedule": period_schedule,
+        "lunch": menu_data,
         "menu_week": menu_week,
         "events": [
             f"Holiday mode: {'ON' if settings.get('holiday_mode') == 1 else 'OFF'}",
@@ -173,7 +205,7 @@ def _render_user_email(user, settings):
 
 
 def _timetable_form_data(prefix, form_data):
-    return serialize_week_schedule(form_data, prefix)
+    return serialize_timetable(form_data, prefix)
 
 
 # ============================================================================
@@ -757,13 +789,13 @@ def admin_user_profile(user_id):
             return redirect(url_for("admin_user_profile", user_id=user_id))
 
         settings = _settings_defaults(_fetch_settings())
-        user["timetable_a"] = parse_week_schedule(user.get("timetable_a", ""))
-        user["timetable_b"] = parse_week_schedule(user.get("timetable_b", ""))
+        user["timetable_a"] = parse_timetable(user.get("timetable_a", ""))
+        user["timetable_b"] = parse_timetable(user.get("timetable_b", ""))
         return render_template(
             "admin_profile.html",
             user=user,
-            weekdays=WEEKDAYS,
-            schedule_fields=SCHEDULE_FIELDS,
+            timetable_a=user["timetable_a"],
+            timetable_b=user["timetable_b"],
             send_emails=user.get("send_emails", 1),
             holiday_mode=settings["holiday_mode"],
         )

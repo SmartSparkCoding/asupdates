@@ -12,6 +12,9 @@
     --navy: #0f766e;
     --navy-dark: #134e4a;
     --navy-light: #14b8a6;
+    --red: #dc2626;
+    --red-dark: #991b1b;
+    --red-light: #ef4444;
     --white: #ffffff;
     --gray-light: #f8f9fa;
     --gray: #6b7280;
@@ -104,7 +107,21 @@ a:hover {
 }
 
 .admin-topbar {
-    background: linear-gradient(135deg, var(--navy-dark) 0%, #0f3d3a 100%);
+    background: linear-gradient(135deg, var(--red) 0%, var(--red-dark) 100%);
+}
+
+.admin-topbar h2 {
+    color: var(--white);
+}
+
+.admin-topbar .btn-outline {
+    border-color: rgba(255, 255, 255, 0.6);
+    color: var(--white);
+}
+
+.admin-topbar .btn-outline:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--white);
 }
 
 /* ========================================
@@ -440,12 +457,27 @@ a:hover {
 }
 
 .btn-admin {
-    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+    background: linear-gradient(135deg, var(--red) 0%, var(--red-dark) 100%);
     color: var(--white);
 }
 
 .btn-admin:hover {
-    background: linear-gradient(135deg, var(--navy-light) 0%, var(--navy) 100%);
+    background: linear-gradient(135deg, var(--red-light) 0%, var(--red) 100%);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+.admin-card {
+    border-left: 4px solid var(--red);
+}
+
+.admin-card .card-header {
+    background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+    border-left: 4px solid var(--red);
+}
+
+.admin-card .card-header h2,
+.admin-card .card-header h3 {
+    color: var(--red-dark);
 }
 
 .btn-outline {
@@ -704,6 +736,22 @@ a:hover {
     padding: 12px 15px;
     color: var(--white);
     background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+}
+
+.admin-page .timetable-panel h4 {
+    background: linear-gradient(135deg, var(--red) 0%, var(--red-dark) 100%);
+}
+
+.admin-page .info-box,
+.admin-page .profile-summary,
+.admin-page .menu-current,
+.admin-page .holiday-alert {
+    border-left-color: var(--red);
+    background: #fee2e2;
+}
+
+.admin-page .week-badge {
+    background: var(--red);
 }
 
 .timetable-table {

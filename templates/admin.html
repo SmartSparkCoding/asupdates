@@ -22,11 +22,11 @@
         {% endfor %}
     {% endif %}
 
-    <div class="container">
+    <div class="container admin-page">
         <!-- System Status Card -->
 
                 <!-- School Notices Card -->
-                <div class="card">
+                <div class="card admin-card">
                     <div class="card-header">
                         <h3>📢 School Notices</h3>
                     </div>
@@ -54,7 +54,7 @@
                         </div>
                     </div>
                 </div>
-        <div class="card">
+        <div class="card admin-card">
             <div class="card-header">
                 <h3>📊 System Status</h3>
             </div>
@@ -77,7 +77,7 @@
         </div>
 
         <!-- Holiday Settings Card -->
-        <div class="card">
+        <div class="card admin-card">
             <div class="card-header">
                 <h3>🏖️ Holiday Mode</h3>
             </div>
@@ -108,7 +108,7 @@
         </div>
 
         <!-- AB Week Setting Card -->
-        <div class="card">
+        <div class="card admin-card">
             <div class="card-header">
                 <h3>📅 AB Week Schedule</h3>
             </div>
@@ -133,12 +133,27 @@
         </div>
 
         <!-- Menu Rota Card -->
-        <div class="card">
+        <div class="card admin-card">
             <div class="card-header">
                 <h3>🍽️ 3-Week Menu Rota</h3>
             </div>
             <div class="card-body">
                 <form method="POST" action="/admin/menu-settings" class="form-group">
+                    <div class="info-box" style="margin-bottom: 20px;">
+                        <h4>Menu Format</h4>
+                        <p>Enter menu data as JSON with these food types:</p>
+                        <pre style="background: white; padding: 10px; border-radius: 4px; font-size: 0.85rem; overflow-x: auto;">{
+  "main": "Roast Chicken",
+  "sides": "Roast Potatoes",
+  "pasta_bar": "Penne Carbonara",
+  "street_food": "Fish &amp; Chips",
+  "potatoes": "Mashed Potato",
+  "soup": "Tomato Soup",
+  "vegetarian": "Vegetable Curry",
+  "dessert": "Chocolate Cake"
+}</pre>
+                    </div>
+
                     <div class="account-grid">
                         <div class="form-item">
                             <label for="menu_week">Current Menu Week</label>
@@ -153,15 +168,15 @@
                     <div class="menu-grid">
                         <div class="form-item">
                             <label for="menu_week_1">Week 1 Menu</label>
-                            <textarea id="menu_week_1" name="menu_week_1" class="menu-textarea" placeholder="Paste week 1 menu here">{{ menu_week_1 }}</textarea>
+                            <textarea id="menu_week_1" name="menu_week_1" class="menu-textarea" placeholder="Paste week 1 menu here (JSON format)">{{ menu_week_1 }}</textarea>
                         </div>
                         <div class="form-item">
                             <label for="menu_week_2">Week 2 Menu</label>
-                            <textarea id="menu_week_2" name="menu_week_2" class="menu-textarea" placeholder="Paste week 2 menu here">{{ menu_week_2 }}</textarea>
+                            <textarea id="menu_week_2" name="menu_week_2" class="menu-textarea" placeholder="Paste week 2 menu here (JSON format)">{{ menu_week_2 }}</textarea>
                         </div>
                         <div class="form-item">
                             <label for="menu_week_3">Week 3 Menu</label>
-                            <textarea id="menu_week_3" name="menu_week_3" class="menu-textarea" placeholder="Paste week 3 menu here">{{ menu_week_3 }}</textarea>
+                            <textarea id="menu_week_3" name="menu_week_3" class="menu-textarea" placeholder="Paste week 3 menu here (JSON format)">{{ menu_week_3 }}</textarea>
                         </div>
                     </div>
 
@@ -201,7 +216,7 @@
         </div>
 
         <!-- Users Table Card -->
-        <div class="card">
+        <div class="card admin-card">
             <div class="card-header">
                 <h3>👥 Manage Users ({{ user_count }})</h3>
             </div>
@@ -260,7 +275,7 @@
         </div>
 
         <!-- Add User Card -->
-        <div class="card">
+        <div class="card admin-card">
             <div class="card-header">
                 <h3>➕ Add User</h3>
             </div>
