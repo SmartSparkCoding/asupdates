@@ -10,6 +10,11 @@ Complete rebuild of the AS Updates Flask + SQLite + Email Scheduling System from
 - Added holiday mode duration input and 3-week lunch rota management on the admin dashboard.
 - Added school notices editing with a last-4-saved-notices history view for upcoming email rounds.
 - Reworked the admin menu rota into a 3-week weekday grid and aligned the timetable editor to the shared period order.
+- Converted the menu editor to a fullscreen modal for better visibility and editing of all menu options.
+- Added per-day timetable editing with before school, after school, and lunch clubs fields for each weekday.
+- Exposed daily schedule editing on the user dashboard so students can manage their own before/after school activities.
+- Updated the email template to display before/after school and lunch club activities for each day.
+- Synchronized day-specific timetable data across user dashboard, admin profiles, and email rendering.
 - Switched the interface theme from blue to teal-green across the app and email template.
 
 ## Files Modified/Created

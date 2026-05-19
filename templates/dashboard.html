@@ -60,6 +60,60 @@
             </div>
         </div>
 
+        <!-- Daily Timetable Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3>📚 Your Daily Schedule</h3>
+            </div>
+            <div class="card-body">
+                <p class="card-description">Add your before school, after school, and lunch club activities for each day of the week.</p>
+                
+                <input type="checkbox" id="day-timetable-modal" class="modal-toggle">
+                <label for="day-timetable-modal" class="btn btn-primary">Edit Daily Schedule</label>
+
+                <div class="modal-overlay day-timetable-modal">
+                    <div class="modal-shell modal-shell-large">
+                        <div class="modal-header">
+                            <h3>Edit Daily Schedule</h3>
+                            <label for="day-timetable-modal" class="modal-close">Close</label>
+                        </div>
+                        <div class="modal-body">
+                            <form method="POST" action="/dashboard/update-timetable" class="form-group">
+                                <div class="schedule-editor-grid">
+                                    <div class="schedule-week-panel" style="grid-column: 1 / -1;">
+                                        <h4>Before School, After School & Lunch Clubs</h4>
+                                        <table class="schedule-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Day</th>
+                                                    {% for field in day_timetable_fields %}
+                                                        <th>{{ field.replace('_', ' ')|title }}</th>
+                                                    {% endfor %}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for day in weekdays %}
+                                                    <tr>
+                                                        <td class="period-cell">{{ day }}</td>
+                                                        {% for field in day_timetable_fields %}
+                                                            <td>
+                                                                <input type="text" name="day_timetable_{{ day.lower() }}_{{ field }}" value="{{ day_timetable.get(day, {}).get(field, '') }}" placeholder="{{ field.replace('_', ' ')|title }}">
+                                                            </td>
+                                                        {% endfor %}
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary" style="margin-top: 15px;">Save Daily Schedule</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Email Settings Card -->
         <div class="card">
             <div class="card-header">
@@ -129,7 +183,7 @@
                     <li>🔐 Use a PIN for extra security during login</li>
                     <li>📅 Emails are only sent on weekdays</li>
                     <li>🏖️ Holiday mode pauses all emails during breaks</li>
-                    <li>🗓️ Add both Week A and Week B timetables to keep emails personalised</li>
+                    <li>🗓️ Edit your daily schedule to include your clubs and activities</li>
                 </ul>
             </div>
         </div>

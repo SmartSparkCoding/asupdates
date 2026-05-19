@@ -561,9 +561,13 @@ All documentation is included in the project:
 
 ## Current Session Addendum
 - User dashboards now support editing name, email, PIN, and Week A / Week B timetables directly from the account area.
+- Added per-day schedule editing on the user dashboard with before school, after school, and lunch clubs fields.
 - Admin dashboards now include per-user profile pages, a preview/send email prompt, holiday weeks, and a 3-week menu rota editor.
 - School notices can now be edited for the next email round and the admin can review the last four saved notices.
-- The menu rota now uses a weekday grid for all 3 weeks, and the timetable editor follows the shared ordered period list.
+- The menu rota now uses a weekday grid for all 3 weeks with a fullscreen modal editor for better visibility.
+- The timetable editor follows the shared ordered period list (Periods 1-7) and is available on both admin profiles and user dashboards.
+- Updated the email template to display before/after school activities and lunch clubs for each specific day.
+- Daily schedule data is synchronized across the user dashboard, admin profiles, and email rendering contexts.
 - The email template is now rendered from live user data so browser previews match the exact outgoing HTML.
 - The visual theme has been moved from blue accents to teal-green across the app and email template.
 

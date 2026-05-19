@@ -152,6 +152,7 @@ def verify_schema():
         _ensure_column(conn, "users", "name", "TEXT DEFAULT ''")
         _ensure_column(conn, "users", "timetable_a", "TEXT DEFAULT ''")
         _ensure_column(conn, "users", "timetable_b", "TEXT DEFAULT ''")
+        _ensure_column(conn, "users", "day_timetable", "TEXT DEFAULT ''")
         _ensure_column(conn, "settings", "holiday_weeks", "INTEGER DEFAULT 0")
         _ensure_column(conn, "settings", "menu_week", "INTEGER DEFAULT 1")
         _ensure_column(conn, "settings", "menu_week_1", "TEXT DEFAULT ''")

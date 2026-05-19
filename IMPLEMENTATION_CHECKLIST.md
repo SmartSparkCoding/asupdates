@@ -151,6 +151,7 @@
 - ✅ Delete user functionality
 - ✅ Toggle user emails
 - ✅ Test email button
+- ✅ Fullscreen menu rota editor (3-week weekday grid)
 - ✅ Configuration info box
 - ✅ Responsive table design
 
@@ -164,7 +165,8 @@
 ### Email Template (email.html)
 - ✅ HTML email structure
 - ✅ Professional header
-- ✅ Timetable section
+- ✅ Period timetable section
+- ✅ Daily schedule section (before/after school, lunch clubs)
 - ✅ Lunch menu section
 - ✅ Events section
 - ✅ Updates section
@@ -212,16 +214,21 @@
 
 ### User Routes
 - ✅ GET /dashboard - User dashboard (@login_required)
+- ✅ POST /dashboard/update-timetable - Update user timetable (including daily schedule) (@login_required)
 - ✅ POST /toggle-emails - Toggle email preference (@login_required)
 - ✅ GET /pin - PIN verification page
 
 ### Admin Routes
 - ✅ GET /admin - Admin dashboard (@admin_required)
+- ✅ GET /admin/user/<id> - User profile editor (@admin_required)
+- ✅ POST /admin/user/<id> - Update user profile including daily schedule (@admin_required)
 - ✅ POST /admin/add-user - Add user (@admin_required)
 - ✅ POST /admin/delete-user/<id> - Delete user (@admin_required)
 - ✅ POST /admin/toggle-user-emails/<id> - Toggle user emails (@admin_required)
 - ✅ POST /admin/toggle-holiday - Toggle holiday mode (@admin_required)
 - ✅ POST /admin/set-week/<A|B> - Set AB week (@admin_required)
+- ✅ POST /admin/menu-settings - Update menu rota (@admin_required)
+- ✅ POST /admin/send-email/<id> - Send email to user (@admin_required)
 - ✅ POST /admin/test-email - Send test email (@admin_required)
 
 ### API Routes

@@ -15,9 +15,11 @@ from email_templates import (
     WEEKDAYS,
     PERIOD_ORDER,
     SCHEDULE_FIELDS,
+    DAY_TIMETABLE_FIELDS,
     PERIOD_TIMES,
     default_timetable,
     default_week_schedule,
+    default_day_timetable,
     parse_timetable,
     parse_week_schedule,
     parse_week_menu,
@@ -83,7 +85,7 @@ def _fetch_user(user_id):
     c = db.cursor()
     c.execute(
         """
-        SELECT id, email, name, pin, send_emails, timetable_a, timetable_b, created_at
+        SELECT id, email, name, pin, send_emails, timetable_a, timetable_b, day_timetable, created_at
         FROM users
         WHERE id=?
         """,
@@ -171,6 +173,11 @@ def _build_user_email_context(user, settings, external_url_base=None):
     timetable_raw = user.get("timetable_a", "") if current_week == "A" else user.get("timetable_b", "")
     timetable = parse_timetable(timetable_raw)
     period_schedule = _get_period_schedule(timetable)
+    weekly_schedule = parse_week_schedule(timetable_raw)
+    day_timetable = _parse_day_timetable(user.get("day_timetable", ""))
+    current_day = datetime.now().strftime("%A")
+    current_day_schedule = schedule_day_row(weekly_schedule, current_day) if current_day in WEEKDAYS else {}
+    current_day_timetable = day_timetable.get(current_day, {}) if current_day in WEEKDAYS else {}
     
     menu_week = max(1, min(3, int(settings.get("menu_week", 1) or 1)))
     menu_text = settings.get(f"menu_week_{menu_week}", "")
@@ -178,7 +185,6 @@ def _build_user_email_context(user, settings, external_url_base=None):
     
     school_notice = settings.get("school_notice", "")
     display_name = user.get("name") or user.get("email", "").split("@")[0].replace(".", " ").title() or "Student"
-    current_day = datetime.now().strftime("%A")
 
     return {
         "name": display_name,
@@ -186,6 +192,9 @@ def _build_user_email_context(user, settings, external_url_base=None):
         "sent_datetime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "day_name": current_day,
         "day_schedule": period_schedule,
+        "current_day_schedule": current_day_schedule,
+        "current_day_timetable": current_day_timetable,
+        "current_week_schedule": schedule_rows(weekly_schedule),
         "lunch": menu_data,
         "menu_week": menu_week,
         "events": [
@@ -198,7 +207,8 @@ def _build_user_email_context(user, settings, external_url_base=None):
         ],
         "school_notice": school_notice,
         "school_notice_lines": _notice_lines(school_notice),
-            "period_order": PERIOD_ORDER,
+        "period_order": PERIOD_ORDER,
+        "day_timetable_fields": DAY_TIMETABLE_FIELDS,
         "unsubscribe_url": external_url_base or url_for("dashboard", _external=True),
     }
 
@@ -209,6 +219,36 @@ def _render_user_email(user, settings):
 
 def _timetable_form_data(prefix, form_data):
     return serialize_timetable(form_data, prefix)
+
+
+def _parse_day_timetable(raw_value):
+    """Parse day timetable (before/after school, lunch clubs) from JSON."""
+    if not raw_value:
+        return default_day_timetable()
+    
+    if isinstance(raw_value, dict):
+        result = default_day_timetable()
+        for day in WEEKDAYS:
+            if day in raw_value and isinstance(raw_value[day], dict):
+                for field in DAY_TIMETABLE_FIELDS:
+                    result[day][field] = str(raw_value[day].get(field, "")).strip()
+        return result
+    
+    try:
+        parsed = json.loads(raw_value)
+        return _parse_day_timetable(parsed)
+    except (TypeError, ValueError):
+        return default_day_timetable()
+
+
+def _serialize_day_timetable(form_data, prefix):
+    """Serialize day timetable from form data into JSON."""
+    timetable = default_day_timetable()
+    for day in WEEKDAYS:
+        slug = day.lower()
+        for field in DAY_TIMETABLE_FIELDS:
+            timetable[day][field] = form_data.get(f"{prefix}_{slug}_{field}", "").strip()
+    return timetable
 
 
 # ============================================================================
@@ -438,6 +478,7 @@ def dashboard():
         settings = _settings_defaults(_fetch_settings())
         schedule_a = parse_week_schedule(user.get("timetable_a", ""))
         schedule_b = parse_week_schedule(user.get("timetable_b", ""))
+        day_timetable = _parse_day_timetable(user.get("day_timetable", ""))
         current_week = settings["ab_week"]
         current_day = datetime.now().strftime("%A")
         current_schedule_source = schedule_a if current_week == "A" else schedule_b
@@ -457,13 +498,16 @@ def dashboard():
             menu_week_3=settings["menu_week_3"],
             timetable_a=schedule_a,
             timetable_b=schedule_b,
+            day_timetable=day_timetable,
             timetable_rows=schedule_rows,
             current_week=current_week,
             current_day=current_day,
             current_schedule=schedule_day_row(current_schedule_source, current_day) if current_day in WEEKDAYS else {},
             current_week_schedule=schedule_rows(current_schedule_source),
             weekdays=WEEKDAYS,
+            day_timetable_fields=DAY_TIMETABLE_FIELDS,
             schedule_fields=SCHEDULE_FIELDS,
+            current_week_key=current_week,
         )
         
     except Exception as e:
@@ -523,6 +567,37 @@ def dashboard_update_account():
     except Exception as e:
         print(f"[✗] Update account error: {e}")
         flash("Error updating account", "danger")
+
+    return redirect(url_for("dashboard"))
+
+
+@app.route("/dashboard/update-timetable", methods=["POST"])
+@login_required
+def dashboard_update_timetable():
+    """Update the logged in user's weekday timetable and daily schedule."""
+
+    try:
+        timetable_a = json.dumps(serialize_week_schedule(request.form, "timetable_a"))
+        timetable_b = json.dumps(serialize_week_schedule(request.form, "timetable_b"))
+        day_timetable = json.dumps(_serialize_day_timetable(request.form, "day_timetable"))
+
+        db = get_db()
+        c = db.cursor()
+        c.execute(
+            """
+            UPDATE users
+            SET timetable_a=?, timetable_b=?, day_timetable=?
+            WHERE id=?
+            """,
+            (timetable_a, timetable_b, day_timetable, session["user_id"]),
+        )
+        db.commit()
+        db.close()
+
+        flash("Timetable updated", "success")
+    except Exception as e:
+        print(f"[✗] Update timetable error: {e}")
+        flash("Error updating timetable", "danger")
 
     return redirect(url_for("dashboard"))
 
@@ -761,6 +836,7 @@ def admin_user_profile(user_id):
             send_emails = 1 if request.form.get("send_emails") == "on" else 0
             timetable_a = json.dumps(_timetable_form_data("timetable_a", request.form))
             timetable_b = json.dumps(_timetable_form_data("timetable_b", request.form))
+            day_timetable = json.dumps(_serialize_day_timetable(request.form, "day_timetable"))
 
             db = get_db()
             c = db.cursor()
@@ -775,19 +851,19 @@ def admin_user_profile(user_id):
                 c.execute(
                     """
                     UPDATE users
-                    SET email=?, name=?, pin=?, send_emails=?, timetable_a=?, timetable_b=?
+                    SET email=?, name=?, pin=?, send_emails=?, timetable_a=?, timetable_b=?, day_timetable=?
                     WHERE id=?
                     """,
-                    (email, name, generate_password_hash(pin), send_emails, timetable_a, timetable_b, user_id),
+                    (email, name, generate_password_hash(pin), send_emails, timetable_a, timetable_b, day_timetable, user_id),
                 )
             else:
                 c.execute(
                     """
                     UPDATE users
-                    SET email=?, name=?, send_emails=?, timetable_a=?, timetable_b=?
+                    SET email=?, name=?, send_emails=?, timetable_a=?, timetable_b=?, day_timetable=?
                     WHERE id=?
                     """,
-                    (email, name, send_emails, timetable_a, timetable_b, user_id),
+                    (email, name, send_emails, timetable_a, timetable_b, day_timetable, user_id),
                 )
 
             db.commit()
@@ -799,14 +875,18 @@ def admin_user_profile(user_id):
         settings = _settings_defaults(_fetch_settings())
         user["timetable_a"] = parse_timetable(user.get("timetable_a", ""))
         user["timetable_b"] = parse_timetable(user.get("timetable_b", ""))
+        user["day_timetable"] = _parse_day_timetable(user.get("day_timetable", ""))
         return render_template(
             "admin_profile.html",
             user=user,
             timetable_a=user["timetable_a"],
             timetable_b=user["timetable_b"],
+            day_timetable=user["day_timetable"],
             send_emails=user.get("send_emails", 1),
             holiday_mode=settings["holiday_mode"],
             period_order=PERIOD_ORDER,
+            day_timetable_fields=DAY_TIMETABLE_FIELDS,
+            weekdays=WEEKDAYS,
         )
 
     except Exception as e:
@@ -825,7 +905,7 @@ def admin_send_email(user_id):
         c = db.cursor()
         
         # Get user record
-        c.execute("SELECT id, email, name, pin, send_emails, timetable_a, timetable_b, created_at FROM users WHERE id=?", (user_id,))
+        c.execute("SELECT id, email, name, pin, send_emails, timetable_a, timetable_b, day_timetable, created_at FROM users WHERE id=?", (user_id,))
         result = c.fetchone()
         
         if not result:

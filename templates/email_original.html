@@ -193,11 +193,47 @@
 																<table class="heading_block block-7" width="100%" border="0" cellpadding="10" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
 																	<tr>
 																		<td class="pad" style="width:100%;" align="center">
-																			<h3 style="margin: 0; color: #000000; direction: ltr; font-family: 'Open Sans','Lucida Sans'; font-size: 24px; font-weight: 500; letter-spacing: normal; line-height: 1.2; text-align: left; margin-top: 0; margin-bottom: 0; mso-line-height-alt: 29px;"><span class="tinyMce-placeholder" style="word-break: break-word;">Lunch options for today</span></h3>
+																			<h3 style="margin: 0; color: #000000; direction: ltr; font-family: 'Open Sans','Lucida Sans'; font-size: 24px; font-weight: 500; letter-spacing: normal; line-height: 1.2; text-align: left; margin-top: 0; margin-bottom: 0; mso-line-height-alt: 29px;"><span class="tinyMce-placeholder" style="word-break: break-word;">Your schedule for today</span></h3>
 																		</td>
 																	</tr>
 																</table>
 																<table class="table_block block-8" width="100%" border="0" cellpadding="10" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+																	<tr>
+																		<td class="pad">
+																			<table style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-collapse: collapse; width: 100%; table-layout: fixed; direction: ltr; background-color: transparent; font-family: 'Open Sans','Lucida Sans'; font-weight: 400; color: #000000; text-align: left; letter-spacing: 0px;" width="100%">
+																				<thead style="vertical-align: top; background-color: #f2f2f2; color: #000000; font-size: 14px; line-height: 1.2; mso-line-height-alt: 17px;">
+																					<tr>
+																						<th width="50%" style="padding: 10px; word-break: break-word; font-weight: 700; border-top: 1px solid #dddddd; border-right: 1px solid #dddddd; border-bottom: 1px solid #dddddd; border-left: 1px solid #dddddd; text-align: center;">Activity</th>
+																						<th width="50%" style="padding: 10px; word-break: break-word; font-weight: 700; border-top: 1px solid #dddddd; border-right: 1px solid #dddddd; border-bottom: 1px solid #dddddd; border-left: 1px solid #dddddd; text-align: center;">Details</th>
+																					</tr>
+																				</thead>
+																				<tbody style="vertical-align: top; font-size: 16px; line-height: 1.2; mso-line-height-alt: 19px;">
+																					<tr>
+																						<td width="50%" style="padding: 10px; word-break: break-word; vertical-align: top; border-top: 1px solid #dddddd; border-right: 1px solid #dddddd; border-bottom: 1px solid #dddddd; border-left: 1px solid #dddddd;">Before School</td>
+																						<td width="50%" style="padding: 10px; word-break: break-word; vertical-align: top; border-top: 1px solid #dddddd; border-right: 1px solid #dddddd; border-bottom: 1px solid #dddddd; border-left: 1px solid #dddddd;">{{ current_day_timetable.get('before_school', '—') }}</td>
+																					</tr>
+																					<tr>
+																						<td width="50%" style="padding: 10px; word-break: break-word; vertical-align: top; border-top: 1px solid #dddddd; border-right: 1px solid #dddddd; border-bottom: 1px solid #dddddd; border-left: 1px solid #dddddd;">Lunch & Clubs</td>
+																						<td width="50%" style="padding: 10px; word-break: break-word; vertical-align: top; border-top: 1px solid #dddddd; border-right: 1px solid #dddddd; border-bottom: 1px solid #dddddd; border-left: 1px solid #dddddd;">{{ current_day_timetable.get('lunch_clubs', '—') }}</td>
+																					</tr>
+																					<tr>
+																						<td width="50%" style="padding: 10px; word-break: break-word; vertical-align: top; border-top: 1px solid #dddddd; border-right: 1px solid #dddddd; border-bottom: 1px solid #dddddd; border-left: 1px solid #dddddd;">After School</td>
+																						<td width="50%" style="padding: 10px; word-break: break-word; vertical-align: top; border-top: 1px solid #dddddd; border-right: 1px solid #dddddd; border-bottom: 1px solid #dddddd; border-left: 1px solid #dddddd;">{{ current_day_timetable.get('after_school', '—') }}</td>
+																					</tr>
+																				</tbody>
+																			</table>
+																		</td>
+																	</tr>
+																</table>
+																<div class="spacer_block block-9" style="height:40px;line-height:40px;font-size:1px;">&#8202;</div>
+																<table class="heading_block block-10" width="100%" border="0" cellpadding="10" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
+																	<tr>
+																		<td class="pad" style="width:100%;" align="center">
+																			<h3 style="margin: 0; color: #000000; direction: ltr; font-family: 'Open Sans','Lucida Sans'; font-size: 24px; font-weight: 500; letter-spacing: normal; line-height: 1.2; text-align: left; margin-top: 0; margin-bottom: 0; mso-line-height-alt: 29px;"><span class="tinyMce-placeholder" style="word-break: break-word;">Lunch options for today</span></h3>
+																		</td>
+																	</tr>
+																</table>
+																<table class="table_block block-11" width="100%" border="0" cellpadding="10" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt;">
 																	<tr>
 																		<td class="pad">
 																			<table style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-collapse: collapse; width: 100%; table-layout: fixed; direction: ltr; background-color: transparent; font-family: 'Open Sans','Lucida Sans'; font-weight: 400; color: #000000; text-align: left; letter-spacing: 0px;" width="100%">

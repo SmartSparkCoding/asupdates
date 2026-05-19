@@ -20,6 +20,7 @@ A modern, production-ready Flask application for sending personalized daily scho
 ### 📊 User Dashboard
 - Edit name, email, and PIN from the account area
 - Enter Week A and Week B timetables for periods 1 to 7
+- Edit daily schedule with before school, after school, and lunch clubs for each weekday
 - Toggle email notifications on/off
 - Check current week schedule (A/B)
 - View holiday mode status and current menu week
@@ -27,10 +28,10 @@ A modern, production-ready Flask application for sending personalized daily scho
 
 ### 🎛️ Admin Dashboard
 - Manage all users (add, delete, profile, email preview, send emails)
-- Edit each user’s full profile, including PIN and timetable
+- Edit each user's full profile, including PIN, periods timetable, and daily schedule
 - Set holiday mode with a week-count prompt
 - Manage AB week schedule
-- Manage the 3-week lunch rota and active menu week
+- Manage the 3-week lunch rota with a fullscreen menu editor and active menu week selector
 - Edit school notices for the next email round and review the last 4 saved notices
 - Send test emails
 - Monitor system status

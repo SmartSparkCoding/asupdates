@@ -60,6 +60,9 @@
                     <input type="checkbox" id="schedule-modal-toggle" class="modal-toggle">
                     <label for="schedule-modal-toggle" class="btn btn-secondary">Edit Timetables</label>
 
+                    <input type="checkbox" id="day-schedule-modal-toggle" class="modal-toggle">
+                    <label for="day-schedule-modal-toggle" class="btn btn-secondary">Edit Daily Schedule</label>
+
                     <div class="modal-overlay schedule-modal">
                         <div class="modal-shell modal-shell-large">
                             <div class="modal-header">
@@ -101,6 +104,49 @@
                             </div>
                             <div class="modal-footer">
                                 <label for="schedule-modal-toggle" class="btn btn-outline">Done</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-overlay day-schedule-modal">
+                        <div class="modal-shell modal-shell-large">
+                            <div class="modal-header">
+                                <h3>Daily Schedule Editor</h3>
+                                <label for="day-schedule-modal-toggle" class="modal-close">Close</label>
+                            </div>
+                            <div class="modal-body">
+                                <p class="card-description">Edit before school, after school, and lunch clubs for each weekday.</p>
+
+                                <div class="schedule-editor-grid">
+                                    <div class="schedule-week-panel" style="grid-column: 1 / -1;">
+                                        <h4>Daily Schedule</h4>
+                                        <table class="schedule-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Day</th>
+                                                    {% for field in day_timetable_fields %}
+                                                        <th>{{ field.replace('_', ' ')|title }}</th>
+                                                    {% endfor %}
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for day in weekdays %}
+                                                    <tr>
+                                                        <td class="period-cell">{{ day }}</td>
+                                                        {% for field in day_timetable_fields %}
+                                                            <td>
+                                                                <input type="text" name="day_timetable_{{ day.lower() }}_{{ field }}" value="{{ day_timetable.get(day, {}).get(field, '') }}" placeholder="{{ field.replace('_', ' ')|title }}">
+                                                            </td>
+                                                        {% endfor %}
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <label for="day-schedule-modal-toggle" class="btn btn-outline">Done</label>
                             </div>
                         </div>
                     </div>

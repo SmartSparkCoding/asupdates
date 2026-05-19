@@ -14,6 +14,7 @@ environment = Environment(
 
 WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 SCHEDULE_FIELDS = ["before_school", "break_time", "lunch_time", "after_school"]
+DAY_TIMETABLE_FIELDS = ["before_school", "after_school", "lunch_clubs"]  # User-facing daily timetable
 PERIOD_ORDER = ["1", "2", "3", "4", "5a", "5b / Lunch", "6", "7"]
 
 PERIOD_TIMES = {
@@ -40,6 +41,11 @@ def default_week_schedule():
         day: {field: "" for field in SCHEDULE_FIELDS}
         for day in WEEKDAYS
     }
+
+
+def default_day_timetable():
+    """User timetable for a single day with before/after school and lunch clubs."""
+    return {day: {field: "" for field in DAY_TIMETABLE_FIELDS} for day in WEEKDAYS}
 
 
 def default_week_menu():
