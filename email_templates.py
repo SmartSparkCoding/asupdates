@@ -32,8 +32,19 @@ PERIOD_TIMES = {
 MENU_FIELDS = ["main", "sides", "pasta_bar", "street_food", "potatoes", "soup", "vegetarian", "dessert"]
 
 
+def _period_form_slug(period):
+    return str(period).lower().replace(" / ", "_").replace(" ", "_")
+
+
+def _empty_period_entry():
+    return {"subject": "", "room": ""}
+
+
 def default_timetable():
-    return {str(period): {"subject": "", "room": ""} for period in range(1, 8)}
+    return {
+        day: {period: _empty_period_entry() for period in PERIOD_ORDER}
+        for day in WEEKDAYS
+    }
 
 
 def default_week_schedule():
@@ -61,11 +72,29 @@ def parse_timetable(raw_value):
 
     if isinstance(raw_value, dict):
         timetable = default_timetable()
+        if any(day in raw_value for day in WEEKDAYS):
+            for day in WEEKDAYS:
+                day_value = raw_value.get(day, {})
+                if not isinstance(day_value, dict):
+                    continue
+                for period in PERIOD_ORDER:
+                    period_value = day_value.get(period, {})
+                    if isinstance(period_value, dict):
+                        timetable[day][period]["subject"] = str(period_value.get("subject", "")).strip()
+                        timetable[day][period]["room"] = str(period_value.get("room", "")).strip()
+            return timetable
+
+        legacy_timetable = {period: _empty_period_entry() for period in PERIOD_ORDER}
         for period, data in raw_value.items():
             period_key = str(period)
-            if period_key in timetable and isinstance(data, dict):
-                timetable[period_key]["subject"] = str(data.get("subject", "")).strip()
-                timetable[period_key]["room"] = str(data.get("room", "")).strip()
+            if period_key in legacy_timetable and isinstance(data, dict):
+                legacy_timetable[period_key]["subject"] = str(data.get("subject", "")).strip()
+                legacy_timetable[period_key]["room"] = str(data.get("room", "")).strip()
+
+        for day in WEEKDAYS:
+            for period in PERIOD_ORDER:
+                timetable[day][period]["subject"] = legacy_timetable[period]["subject"]
+                timetable[day][period]["room"] = legacy_timetable[period]["room"]
         return timetable
 
     try:
@@ -122,10 +151,27 @@ def parse_week_menu(raw_value):
 
 def serialize_timetable(form_data, prefix):
     timetable = default_timetable()
-    for period in timetable:
-        timetable[period]["subject"] = form_data.get(f"{prefix}_{period}_subject", "").strip()
-        timetable[period]["room"] = form_data.get(f"{prefix}_{period}_room", "").strip()
+    for day in WEEKDAYS:
+        day_slug = day.lower()
+        for period in PERIOD_ORDER:
+            period_slug = _period_form_slug(period)
+            timetable[day][period]["subject"] = form_data.get(f"{prefix}_{day_slug}_{period_slug}_subject", "").strip()
+            timetable[day][period]["room"] = form_data.get(f"{prefix}_{day_slug}_{period_slug}_room", "").strip()
     return timetable
+
+
+def timetable_day_rows(timetable, day_name):
+    day_value = (timetable or {}).get(day_name, {})
+    rows = []
+    for period in PERIOD_ORDER:
+        period_value = day_value.get(period, {})
+        rows.append({
+            "period": period,
+            "time": PERIOD_TIMES.get(period, ""),
+            "subject": (period_value or {}).get("subject", ""),
+            "room": (period_value or {}).get("room", ""),
+        })
+    return rows
 
 
 def serialize_week_schedule(form_data, prefix):

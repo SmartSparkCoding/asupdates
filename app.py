@@ -29,6 +29,7 @@ from email_templates import (
     serialize_timetable,
     serialize_week_schedule,
     serialize_week_menu,
+    timetable_day_rows,
     timetable_rows,
 )
 
@@ -178,11 +179,9 @@ def _build_user_email_context(user, settings, external_url_base=None):
     current_week = settings.get("ab_week", "A")
     timetable_raw = user.get("timetable_a", "") if current_week == "A" else user.get("timetable_b", "")
     timetable = parse_timetable(timetable_raw)
-    period_schedule = _get_period_schedule(timetable)
-    weekly_schedule = parse_week_schedule(timetable_raw)
     day_timetable = _parse_day_timetable(user.get("day_timetable", ""))
     current_day = datetime.now().strftime("%A")
-    current_day_schedule = schedule_day_row(weekly_schedule, current_day) if current_day in WEEKDAYS else {}
+    current_day_schedule = {row["period"]: row for row in timetable_day_rows(timetable, current_day)} if current_day in WEEKDAYS else {}
     current_day_timetable = day_timetable.get(current_day, {}) if current_day in WEEKDAYS else {}
     
     menu_week = max(1, min(3, int(settings.get("menu_week", 1) or 1)))
@@ -197,10 +196,10 @@ def _build_user_email_context(user, settings, external_url_base=None):
         "current_date": datetime.now().strftime("%A, %d %B %Y"),
         "sent_datetime": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "day_name": current_day,
-        "day_schedule": period_schedule,
+        "day_schedule": current_day_schedule,
         "current_day_schedule": current_day_schedule,
         "current_day_timetable": current_day_timetable,
-        "current_week_schedule": schedule_rows(weekly_schedule),
+        "current_week_schedule": timetable_day_rows(timetable, current_day) if current_day in WEEKDAYS else [],
         "lunch": menu_data,
         "menu_week": menu_week,
         "events": [
@@ -540,12 +539,13 @@ def dashboard():
     try:
         user = _fetch_user(session["user_id"])
         settings = _settings_defaults(_fetch_settings())
-        schedule_a = parse_week_schedule(user.get("timetable_a", ""))
-        schedule_b = parse_week_schedule(user.get("timetable_b", ""))
+        schedule_a = parse_timetable(user.get("timetable_a", ""))
+        schedule_b = parse_timetable(user.get("timetable_b", ""))
         day_timetable = _parse_day_timetable(user.get("day_timetable", ""))
         current_week = settings["ab_week"]
         current_day = datetime.now().strftime("%A")
         current_schedule_source = schedule_a if current_week == "A" else schedule_b
+        current_day_periods = {row["period"]: row for row in timetable_day_rows(current_schedule_source, current_day)} if current_day in WEEKDAYS else {}
         
         return render_template(
             "dashboard.html",
@@ -563,15 +563,16 @@ def dashboard():
             timetable_a=schedule_a,
             timetable_b=schedule_b,
             day_timetable=day_timetable,
-            timetable_rows=schedule_rows,
             current_week=current_week,
             current_day=current_day,
-            current_schedule=schedule_day_row(current_schedule_source, current_day) if current_day in WEEKDAYS else {},
-            current_week_schedule=schedule_rows(current_schedule_source),
+            current_schedule=current_day_periods,
+            current_week_schedule=timetable_day_rows(current_schedule_source, current_day) if current_day in WEEKDAYS else [],
             weekdays=WEEKDAYS,
             day_timetable_fields=DAY_TIMETABLE_FIELDS,
             schedule_fields=SCHEDULE_FIELDS,
             current_week_key=current_week,
+            period_order=PERIOD_ORDER,
+            period_times=PERIOD_TIMES,
         )
         
     except Exception as e:
@@ -641,8 +642,8 @@ def dashboard_update_timetable():
     """Update the logged in user's weekday timetable and daily schedule."""
 
     try:
-        timetable_a = json.dumps(serialize_week_schedule(request.form, "timetable_a"))
-        timetable_b = json.dumps(serialize_week_schedule(request.form, "timetable_b"))
+        timetable_a = json.dumps(serialize_timetable(request.form, "timetable_a"))
+        timetable_b = json.dumps(serialize_timetable(request.form, "timetable_b"))
         day_timetable = json.dumps(_serialize_day_timetable(request.form, "day_timetable"))
 
         db = get_db()

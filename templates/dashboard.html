@@ -23,33 +23,73 @@
             <div class="modal-body">
                 <form method="POST" action="/dashboard/update-timetable" class="form-group">
                     <div class="schedule-editor-grid">
-                        <div class="schedule-week-panel" style="grid-column: 1 / -1;">
-                            <h4>Before School, After School & Lunch Clubs</h4>
-                            <table class="schedule-table">
-                                <thead>
-                                    <tr>
-                                        <th>Day</th>
-                                        {% for field in day_timetable_fields %}
-                                            <th>{{ field.replace('_', ' ')|title }}</th>
-                                        {% endfor %}
-                                    </tr>
-                                </thead>
-                                <tbody>
+                        {% for week_label, prefix, week_data in [('Week A', 'timetable_a', timetable_a), ('Week B', 'timetable_b', timetable_b)] %}
+                            <div class="schedule-week-panel" style="grid-column: 1 / -1;">
+                                <h4>{{ week_label }}</h4>
+                                <p class="help-text">Each day has its own 8-slot timetable.</p>
+                                <div class="timetable-days-grid">
                                     {% for day in weekdays %}
-                                        <tr>
-                                            <td class="period-cell">{{ day }}</td>
-                                            {% for field in day_timetable_fields %}
-                                                <td>
-                                                    <input type="text" name="day_timetable_{{ day.lower() }}_{{ field }}" value="{{ day_timetable.get(day, {}).get(field, '') }}" placeholder="{{ field.replace('_', ' ')|title }}">
-                                                </td>
-                                            {% endfor %}
-                                        </tr>
+                                        <div class="schedule-day-panel">
+                                            <h5>{{ day }}</h5>
+                                            <table class="schedule-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Period</th>
+                                                        <th>Subject</th>
+                                                        <th>Room</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for period in period_order %}
+                                                        {% set period_slug = period|lower|replace(' / ', '_')|replace(' ', '_') %}
+                                                        {% set period_data = week_data.get(day, {}).get(period, {}) %}
+                                                        <tr>
+                                                            <td class="period-cell">{{ period }}</td>
+                                                            <td>
+                                                                <input type="text" name="{{ prefix }}_{{ day.lower() }}_{{ period_slug }}_subject" value="{{ period_data.get('subject', '') }}" placeholder="Subject">
+                                                            </td>
+                                                            <td>
+                                                                <input type="text" name="{{ prefix }}_{{ day.lower() }}_{{ period_slug }}_room" value="{{ period_data.get('room', '') }}" placeholder="Room">
+                                                            </td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     {% endfor %}
-                                </tbody>
-                            </table>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="schedule-week-panel" style="margin-top: 20px;">
+                        <h4>Before School, After School & Lunch Clubs</h4>
+                        <div class="timetable-days-grid">
+                            {% for day in weekdays %}
+                                <div class="schedule-day-panel" style="grid-column: 1 / -1;">
+                                    <h5>{{ day }}</h5>
+                                    <table class="schedule-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Activity</th>
+                                                <th>Details</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for field in day_timetable_fields %}
+                                                <tr>
+                                                    <td class="period-cell">{{ field.replace('_', ' ')|title }}</td>
+                                                    <td>
+                                                        <input type="text" name="day_timetable_{{ day.lower() }}_{{ field }}" value="{{ day_timetable.get(day, {}).get(field, '') }}" placeholder="{{ field.replace('_', ' ')|title }}">
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% endfor %}
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-primary" style="margin-top: 15px;">Save Daily Schedule</button>
+                    <button type="submit" class="btn btn-primary" style="margin-top: 15px;">Save Timetables</button>
                 </form>
             </div>
         </div>
