@@ -141,17 +141,7 @@
                 <form method="POST" action="/admin/menu-settings" class="form-group">
                     <div class="info-box" style="margin-bottom: 20px;">
                         <h4>Menu Format</h4>
-                        <p>Enter menu data as JSON with these food types:</p>
-                        <pre style="background: white; padding: 10px; border-radius: 4px; font-size: 0.85rem; overflow-x: auto;">{
-  "main": "Roast Chicken",
-  "sides": "Roast Potatoes",
-  "pasta_bar": "Penne Carbonara",
-  "street_food": "Fish &amp; Chips",
-  "potatoes": "Mashed Potato",
-  "soup": "Tomato Soup",
-  "vegetarian": "Vegetable Curry",
-  "dessert": "Chocolate Cake"
-}</pre>
+                        <p>Fill in the menu for each day across all 3 weeks. These values are used in the next email round for the matching weekday.</p>
                     </div>
 
                     <div class="account-grid">
@@ -165,19 +155,38 @@
                         </div>
                     </div>
 
-                    <div class="menu-grid">
-                        <div class="form-item">
-                            <label for="menu_week_1">Week 1 Menu</label>
-                            <textarea id="menu_week_1" name="menu_week_1" class="menu-textarea" placeholder="Paste week 1 menu here (JSON format)">{{ menu_week_1 }}</textarea>
-                        </div>
-                        <div class="form-item">
-                            <label for="menu_week_2">Week 2 Menu</label>
-                            <textarea id="menu_week_2" name="menu_week_2" class="menu-textarea" placeholder="Paste week 2 menu here (JSON format)">{{ menu_week_2 }}</textarea>
-                        </div>
-                        <div class="form-item">
-                            <label for="menu_week_3">Week 3 Menu</label>
-                            <textarea id="menu_week_3" name="menu_week_3" class="menu-textarea" placeholder="Paste week 3 menu here (JSON format)">{{ menu_week_3 }}</textarea>
-                        </div>
+                    <div class="schedule-editor-grid menu-editor-grid">
+                        {% for week_label, week_slug, week_data in [
+                            ('Week 1', 'menu_week_1', menu_week_1|default({})),
+                            ('Week 2', 'menu_week_2', menu_week_2|default({})),
+                            ('Week 3', 'menu_week_3', menu_week_3|default({}))
+                        ] %}
+                            <div class="schedule-week-panel">
+                                <h4>{{ week_label }}</h4>
+                                <table class="schedule-table menu-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Day</th>
+                                            {% for field in menu_fields %}
+                                                <th>{{ field.replace('_', ' ')|title }}</th>
+                                            {% endfor %}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for day in weekdays %}
+                                            <tr>
+                                                <td class="period-cell">{{ day }}</td>
+                                                {% for field in menu_fields %}
+                                                    <td>
+                                                        <input type="text" name="{{ week_slug }}_{{ day.lower() }}_{{ field }}" value="{{ week_data.get(day, {}).get(field, '') }}" placeholder="{{ field.replace('_', ' ')|title }}">
+                                                    </td>
+                                                {% endfor %}
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% endfor %}
                     </div>
 
                     <button type="submit" class="btn btn-primary">Save Menu Rota</button>

@@ -13,17 +13,20 @@ from emailer import send_test_email, send_email
 from scheduler import start_scheduler, generate_email_html
 from email_templates import (
     WEEKDAYS,
+    PERIOD_ORDER,
     SCHEDULE_FIELDS,
     PERIOD_TIMES,
     default_timetable,
     default_week_schedule,
     parse_timetable,
     parse_week_schedule,
+    parse_week_menu,
     render_email_html,
     schedule_day_row,
     schedule_rows,
     serialize_timetable,
     serialize_week_schedule,
+    serialize_week_menu,
     timetable_rows,
 )
 
@@ -129,28 +132,27 @@ def _notice_lines(raw_notice):
 
 def _parse_menu_data(menu_text):
     """Parse menu text into structured dictionary with food types."""
-    menu_fields = ["main", "sides", "pasta_bar", "street_food", "potatoes", "soup", "vegetarian", "dessert"]
-    menu_dict = {field: "" for field in menu_fields}
-    
-    if not menu_text:
-        return menu_dict
-    
-    try:
-        data = json.loads(menu_text)
-        if isinstance(data, dict):
-            for field in menu_fields:
-                menu_dict[field] = str(data.get(field, "")).strip()
-    except (json.JSONDecodeError, TypeError):
-        # If it's not JSON, treat as plain text and put in "main" field
-        menu_dict["main"] = str(menu_text).strip()
-    
-    return menu_dict
+    current_day = datetime.now().strftime("%A")
+    weekly_menu = parse_week_menu(menu_text)
+    if isinstance(weekly_menu, dict) and current_day in weekly_menu:
+        return weekly_menu[current_day]
+
+    return {
+        "main": str(menu_text or "").strip(),
+        "sides": "",
+        "pasta_bar": "",
+        "street_food": "",
+        "potatoes": "",
+        "soup": "",
+        "vegetarian": "",
+        "dessert": "",
+    }
 
 
 def _get_period_schedule(timetable):
     """Convert timetable to period-based schedule with times."""
     schedule = {}
-    for period in ["1", "2", "3", "4", "5a", "5b / Lunch", "6", "7"]:
+    for period in PERIOD_ORDER:
         period_data = timetable.get(period, {})
         subject = (period_data or {}).get("subject", "").strip()
         room = (period_data or {}).get("room", "").strip()
@@ -196,6 +198,7 @@ def _build_user_email_context(user, settings, external_url_base=None):
         ],
         "school_notice": school_notice,
         "school_notice_lines": _notice_lines(school_notice),
+            "period_order": PERIOD_ORDER,
         "unsubscribe_url": external_url_base or url_for("dashboard", _external=True),
     }
 
@@ -590,6 +593,9 @@ def admin_dashboard():
         menu_week_2 = settings[5] if settings else ""
         menu_week_3 = settings[6] if settings else ""
         school_notice = settings[7] if settings else ""
+        menu_week_1_data = parse_week_menu(menu_week_1)
+        menu_week_2_data = parse_week_menu(menu_week_2)
+        menu_week_3_data = parse_week_menu(menu_week_3)
         user_count = len(users) if users else 0
         
         # Convert to list of dicts for easier template use
@@ -610,13 +616,15 @@ def admin_dashboard():
             user_count=user_count,
             holiday_mode=holiday_mode,
             holiday_weeks=holiday_weeks,
-            ab_week=ab_week
-            ,menu_week=menu_week,
-            menu_week_1=menu_week_1,
-            menu_week_2=menu_week_2,
-            menu_week_3=menu_week_3,
+            ab_week=ab_week,
+            menu_week=menu_week,
+            menu_week_1=menu_week_1_data,
+            menu_week_2=menu_week_2_data,
+            menu_week_3=menu_week_3_data,
             school_notice=school_notice,
-            notice_history=notice_history
+            notice_history=notice_history,
+            weekdays=WEEKDAYS,
+            menu_fields=["main", "sides", "pasta_bar", "street_food", "potatoes", "soup", "vegetarian", "dessert"],
         )
         
     except Exception as e:
@@ -798,6 +806,7 @@ def admin_user_profile(user_id):
             timetable_b=user["timetable_b"],
             send_emails=user.get("send_emails", 1),
             holiday_mode=settings["holiday_mode"],
+            period_order=PERIOD_ORDER,
         )
 
     except Exception as e:
@@ -921,9 +930,9 @@ def admin_menu_settings():
     try:
         menu_week = int(request.form.get("menu_week", "1") or 1)
         menu_week = max(1, min(3, menu_week))
-        menu_week_1 = request.form.get("menu_week_1", "").strip()
-        menu_week_2 = request.form.get("menu_week_2", "").strip()
-        menu_week_3 = request.form.get("menu_week_3", "").strip()
+        menu_week_1 = json.dumps(serialize_week_menu(request.form, "menu_week_1"))
+        menu_week_2 = json.dumps(serialize_week_menu(request.form, "menu_week_2"))
+        menu_week_3 = json.dumps(serialize_week_menu(request.form, "menu_week_3"))
 
         db = get_db()
         c = db.cursor()

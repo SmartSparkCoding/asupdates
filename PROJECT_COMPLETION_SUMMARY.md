@@ -563,6 +563,7 @@ All documentation is included in the project:
 - User dashboards now support editing name, email, PIN, and Week A / Week B timetables directly from the account area.
 - Admin dashboards now include per-user profile pages, a preview/send email prompt, holiday weeks, and a 3-week menu rota editor.
 - School notices can now be edited for the next email round and the admin can review the last four saved notices.
+- The menu rota now uses a weekday grid for all 3 weeks, and the timetable editor follows the shared ordered period list.
 - The email template is now rendered from live user data so browser previews match the exact outgoing HTML.
 - The visual theme has been moved from blue accents to teal-green across the app and email template.
 

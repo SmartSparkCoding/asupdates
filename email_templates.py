@@ -14,6 +14,7 @@ environment = Environment(
 
 WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
 SCHEDULE_FIELDS = ["before_school", "break_time", "lunch_time", "after_school"]
+PERIOD_ORDER = ["1", "2", "3", "4", "5a", "5b / Lunch", "6", "7"]
 
 PERIOD_TIMES = {
     "1": "08:40 - 09:25",
@@ -37,6 +38,13 @@ def default_timetable():
 def default_week_schedule():
     return {
         day: {field: "" for field in SCHEDULE_FIELDS}
+        for day in WEEKDAYS
+    }
+
+
+def default_week_menu():
+    return {
+        day: {field: "" for field in MENU_FIELDS}
         for day in WEEKDAYS
     }
 
@@ -83,6 +91,29 @@ def parse_week_schedule(raw_value):
     return parse_week_schedule(parsed)
 
 
+def parse_week_menu(raw_value):
+    if not raw_value:
+        return default_week_menu()
+
+    if isinstance(raw_value, dict):
+        menu = default_week_menu()
+        for day in WEEKDAYS:
+            day_value = raw_value.get(day, {})
+            if isinstance(day_value, dict):
+                for field in MENU_FIELDS:
+                    menu[day][field] = str(day_value.get(field, "")).strip()
+        return menu
+
+    try:
+        parsed = json.loads(raw_value)
+    except (TypeError, ValueError):
+        menu = default_week_menu()
+        menu[WEEKDAYS[0]]["main"] = str(raw_value).strip()
+        return menu
+
+    return parse_week_menu(parsed)
+
+
 def serialize_timetable(form_data, prefix):
     timetable = default_timetable()
     for period in timetable:
@@ -98,6 +129,15 @@ def serialize_week_schedule(form_data, prefix):
         for field in SCHEDULE_FIELDS:
             schedule[day][field] = form_data.get(f"{prefix}_{slug}_{field}", "").strip()
     return schedule
+
+
+def serialize_week_menu(form_data, prefix):
+    menu = default_week_menu()
+    for day in WEEKDAYS:
+        slug = day.lower()
+        for field in MENU_FIELDS:
+            menu[day][field] = form_data.get(f"{prefix}_{slug}_{field}", "").strip()
+    return menu
 
 
 def timetable_rows(timetable):
