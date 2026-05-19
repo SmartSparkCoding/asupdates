@@ -114,6 +114,62 @@
             </div>
         </div>
 
+        <!-- Period Timetable Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3>🗓️ Your Period Timetable</h3>
+            </div>
+            <div class="card-body">
+                <p class="card-description">Edit your lesson timetable for Week A and Week B (Periods 1-7).</p>
+                
+                <input type="checkbox" id="period-timetable-modal" class="modal-toggle">
+                <label for="period-timetable-modal" class="btn btn-primary">Edit Period Timetable</label>
+
+                <div class="modal-overlay period-timetable-modal">
+                    <div class="modal-shell modal-shell-large">
+                        <div class="modal-header">
+                            <h3>Edit Period Timetable (Periods 1-7)</h3>
+                            <label for="period-timetable-modal" class="modal-close">Close</label>
+                        </div>
+                        <div class="modal-body">
+                            <form method="POST" action="/dashboard/update-timetable" class="form-group">
+                                <div class="schedule-editor-grid">
+                                    {% for week_label, week_data in [('Week A', timetable_a), ('Week B', timetable_b)] %}
+                                        <div class="schedule-week-panel">
+                                            <h4>{{ week_label }}</h4>
+                                            <table class="schedule-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Period</th>
+                                                        <th>Subject</th>
+                                                        <th>Room</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for period in period_order %}
+                                                        <tr>
+                                                            <td class="period-cell">{{ period }}</td>
+                                                            <td>
+                                                                <input type="text" name="{{ 'timetable_a' if week_label == 'Week A' else 'timetable_b' }}_{{ period }}_subject" value="{{ week_data.get(period, {}).get('subject', '') }}" placeholder="Subject">
+                                                            </td>
+                                                            <td>
+                                                                <input type="text" name="{{ 'timetable_a' if week_label == 'Week A' else 'timetable_b' }}_{{ period }}_room" value="{{ week_data.get(period, {}).get('room', '') }}" placeholder="Room">
+                                                            </td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                <button type="submit" class="btn btn-primary" style="margin-top: 15px;">Save Period Timetable</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Email Settings Card -->
         <div class="card">
             <div class="card-header">

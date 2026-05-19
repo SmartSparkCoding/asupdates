@@ -312,6 +312,22 @@ a:hover {
 .modal-toggle:checked ~ .modal-overlay {
     display: flex;
 }
+/* Specific modal targeting to prevent overlaps */
+#schedule-modal-toggle:checked ~ .schedule-modal {
+    display: flex !important;
+}
+#day-schedule-modal-toggle:checked ~ .day-schedule-modal {
+    display: flex !important;
+}
+#day-timetable-modal:checked ~ .day-timetable-modal {
+    display: flex !important;
+}
+#period-timetable-modal:checked ~ .period-timetable-modal {
+    display: flex !important;
+}
+#menu-modal-toggle:checked ~ .menu-modal {
+    display: flex !important;
+}
 
 .modal-header,
 .modal-footer {
@@ -365,6 +381,12 @@ a:hover {
 .schedule-editor-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 18px;
+}
+
+.menu-editor-grid {
+    display: grid;
+    grid-template-columns: 1fr;
     gap: 18px;
 }
 
