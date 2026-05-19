@@ -27,8 +27,8 @@ def _ensure_settings_row(conn):
     if cursor.fetchone() is None:
         cursor.execute(
             """
-            INSERT INTO settings (id, holiday_mode, holiday_weeks, ab_week, menu_week, menu_week_1, menu_week_2, menu_week_3)
-            VALUES (1, 0, 0, 'A', 1, '', '', '')
+            INSERT INTO settings (id, holiday_mode, holiday_weeks, ab_week, menu_week, menu_week_1, menu_week_2, menu_week_3, school_notice)
+            VALUES (1, 0, 0, 'A', 1, '', '', '', '')
             """
         )
 
@@ -83,7 +83,18 @@ def init_db():
                 menu_week INTEGER DEFAULT 1,
                 menu_week_1 TEXT DEFAULT '',
                 menu_week_2 TEXT DEFAULT '',
-                menu_week_3 TEXT DEFAULT ''
+                menu_week_3 TEXT DEFAULT '',
+                school_notice TEXT DEFAULT ''
+            )
+            """
+        )
+
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS school_notice_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                notice_text TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """
         )
@@ -146,6 +157,16 @@ def verify_schema():
         _ensure_column(conn, "settings", "menu_week_1", "TEXT DEFAULT ''")
         _ensure_column(conn, "settings", "menu_week_2", "TEXT DEFAULT ''")
         _ensure_column(conn, "settings", "menu_week_3", "TEXT DEFAULT ''")
+        _ensure_column(conn, "settings", "school_notice", "TEXT DEFAULT ''")
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS school_notice_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                notice_text TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
 
         _ensure_settings_row(conn)
         _ensure_user_defaults(conn)

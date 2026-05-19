@@ -12,9 +12,19 @@ environment = Environment(
     autoescape=select_autoescape(["html", "xml"]),
 )
 
+WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+SCHEDULE_FIELDS = ["before_school", "break_time", "lunch_time", "after_school"]
+
 
 def default_timetable():
     return {str(period): {"subject": "", "room": ""} for period in range(1, 8)}
+
+
+def default_week_schedule():
+    return {
+        day: {field: "" for field in SCHEDULE_FIELDS}
+        for day in WEEKDAYS
+    }
 
 
 def parse_timetable(raw_value):
@@ -38,12 +48,42 @@ def parse_timetable(raw_value):
     return parse_timetable(parsed)
 
 
+def parse_week_schedule(raw_value):
+    if not raw_value:
+        return default_week_schedule()
+
+    if isinstance(raw_value, dict):
+        schedule = default_week_schedule()
+        for day in WEEKDAYS:
+            day_value = raw_value.get(day, {})
+            if isinstance(day_value, dict):
+                for field in SCHEDULE_FIELDS:
+                    schedule[day][field] = str(day_value.get(field, "")).strip()
+        return schedule
+
+    try:
+        parsed = json.loads(raw_value)
+    except (TypeError, ValueError):
+        return default_week_schedule()
+
+    return parse_week_schedule(parsed)
+
+
 def serialize_timetable(form_data, prefix):
     timetable = default_timetable()
     for period in timetable:
         timetable[period]["subject"] = form_data.get(f"{prefix}_{period}_subject", "").strip()
         timetable[period]["room"] = form_data.get(f"{prefix}_{period}_room", "").strip()
     return timetable
+
+
+def serialize_week_schedule(form_data, prefix):
+    schedule = default_week_schedule()
+    for day in WEEKDAYS:
+        slug = day.lower()
+        for field in SCHEDULE_FIELDS:
+            schedule[day][field] = form_data.get(f"{prefix}_{slug}_{field}", "").strip()
+    return schedule
 
 
 def timetable_rows(timetable):
@@ -54,6 +94,21 @@ def timetable_rows(timetable):
         if subject or room:
             rows.append({"period": period, "subject": subject, "room": room})
     return rows
+
+
+def schedule_day_row(schedule, day_name):
+    day_value = (schedule or {}).get(day_name, {})
+    return {
+        "day": day_name,
+        "before_school": day_value.get("before_school", ""),
+        "break_time": day_value.get("break_time", ""),
+        "lunch_time": day_value.get("lunch_time", ""),
+        "after_school": day_value.get("after_school", ""),
+    }
+
+
+def schedule_rows(schedule):
+    return [schedule_day_row(schedule, day) for day in WEEKDAYS]
 
 
 def render_email_html(context):

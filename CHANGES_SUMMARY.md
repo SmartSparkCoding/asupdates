@@ -8,6 +8,7 @@ Complete rebuild of the AS Updates Flask + SQLite + Email Scheduling System from
 - Added full admin profile pages so each user can be viewed and edited in detail.
 - Added an on-site email prompt with preview-in-new-tab and send-now actions for individual users.
 - Added holiday mode duration input and 3-week lunch rota management on the admin dashboard.
+- Added school notices editing with a last-4-saved-notices history view for upcoming email rounds.
 - Switched the interface theme from blue to teal-green across the app and email template.
 
 ## Files Modified/Created

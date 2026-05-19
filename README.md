@@ -31,6 +31,7 @@ A modern, production-ready Flask application for sending personalized daily scho
 - Set holiday mode with a week-count prompt
 - Manage AB week schedule
 - Manage the 3-week lunch rota and active menu week
+- Edit school notices for the next email round and review the last 4 saved notices
 - Send test emails
 - Monitor system status
 - API status endpoint

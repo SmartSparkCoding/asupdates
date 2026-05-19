@@ -24,6 +24,7 @@ def _settings_defaults(settings):
         "menu_week_1": settings.get("menu_week_1", ""),
         "menu_week_2": settings.get("menu_week_2", ""),
         "menu_week_3": settings.get("menu_week_3", ""),
+        "school_notice": settings.get("school_notice", ""),
     }
 
 
@@ -33,6 +34,7 @@ def _build_email_context(user, settings):
     timetable = parse_timetable(timetable_raw)
     menu_week = max(1, min(3, int(settings.get("menu_week", 1) or 1)))
     menu_text = settings.get(f"menu_week_{menu_week}", "")
+    school_notice = settings.get("school_notice", "")
     display_name = user.get("name") or user.get("email", "").split("@")[0].replace(".", " ").title() or "Student"
 
     return {
@@ -52,6 +54,7 @@ def _build_email_context(user, settings):
             f"Email updates are {'enabled' if user.get('send_emails', 1) == 1 else 'disabled'} for this account.",
             "Open the dashboard to update your timetable or account details.",
         ],
+        "school_notice": school_notice,
         "unsubscribe_url": "https://ashfordschool.co.uk",
     }
 
@@ -63,7 +66,7 @@ def generate_email_html(user_email):
     c = db.cursor()
     c.execute("SELECT id, email, name, pin, send_emails, timetable_a, timetable_b, created_at FROM users WHERE email=?", (user_email,))
     user = _row_to_dict(c.fetchone())
-    c.execute("SELECT id, holiday_mode, holiday_weeks, ab_week, menu_week, menu_week_1, menu_week_2, menu_week_3 FROM settings WHERE id=1")
+    c.execute("SELECT id, holiday_mode, holiday_weeks, ab_week, menu_week, menu_week_1, menu_week_2, menu_week_3, school_notice FROM settings WHERE id=1")
     settings = _settings_defaults(_row_to_dict(c.fetchone()))
     db.close()
 
@@ -99,7 +102,7 @@ def send_daily_emails():
         # Get all users with send_emails enabled
         c.execute("SELECT id, email, name, pin, send_emails, timetable_a, timetable_b, created_at FROM users WHERE send_emails = 1")
         users = c.fetchall()
-        c.execute("SELECT id, holiday_mode, holiday_weeks, ab_week, menu_week, menu_week_1, menu_week_2, menu_week_3 FROM settings WHERE id=1")
+        c.execute("SELECT id, holiday_mode, holiday_weeks, ab_week, menu_week, menu_week_1, menu_week_2, menu_week_3, school_notice FROM settings WHERE id=1")
         settings = _settings_defaults(_row_to_dict(c.fetchone()))
         db.close()
         

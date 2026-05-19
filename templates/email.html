@@ -206,6 +206,22 @@
                 </div>
                 {% endif %}
 
+                <!-- SCHOOL NOTICE SECTION -->
+                {% if school_notice_lines %}
+                <div class="section">
+                    <div class="section-title">
+                        <span class="emoji">📢</span> School Notice
+                    </div>
+                    <div class="section-content">
+                        <ul>
+                            {% for notice_line in school_notice_lines %}
+                            <li>{{ notice_line }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                {% endif %}
+
                 <!-- UPDATES SECTION -->
                 {% if updates %}
                 <div class="section">

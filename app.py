@@ -82,7 +82,7 @@ def _fetch_settings():
     c = db.cursor()
     c.execute(
         """
-        SELECT id, holiday_mode, holiday_weeks, ab_week, menu_week, menu_week_1, menu_week_2, menu_week_3
+        SELECT id, holiday_mode, holiday_weeks, ab_week, menu_week, menu_week_1, menu_week_2, menu_week_3, school_notice
         FROM settings
         WHERE id=1
         """
@@ -102,7 +102,15 @@ def _settings_defaults(settings):
         "menu_week_1": settings.get("menu_week_1", ""),
         "menu_week_2": settings.get("menu_week_2", ""),
         "menu_week_3": settings.get("menu_week_3", ""),
+        "school_notice": settings.get("school_notice", ""),
     }
+
+
+def _notice_lines(raw_notice):
+    if not raw_notice:
+        return []
+    lines = [line.strip() for line in str(raw_notice).splitlines()]
+    return [line for line in lines if line]
 
 
 def _build_user_email_context(user, settings, external_url_base=None):
@@ -111,6 +119,7 @@ def _build_user_email_context(user, settings, external_url_base=None):
     timetable = parse_timetable(timetable_raw)
     menu_week = max(1, min(3, int(settings.get("menu_week", 1) or 1)))
     menu_text = settings.get(f"menu_week_{menu_week}", "")
+    school_notice = settings.get("school_notice", "")
     display_name = user.get("name") or user.get("email", "").split("@")[0].replace(".", " ").title() or "Student"
     timetable_label = f"Week {current_week}"
 
@@ -131,6 +140,8 @@ def _build_user_email_context(user, settings, external_url_base=None):
             f"Email updates are {'enabled' if user.get('send_emails', 1) == 1 else 'disabled'} for this account.",
             f"Use the dashboard to update your profile and timetable.",
         ],
+        "school_notice": school_notice,
+        "school_notice_lines": _notice_lines(school_notice),
         "unsubscribe_url": external_url_base or url_for("dashboard", _external=True),
     }
 
@@ -513,8 +524,10 @@ def admin_dashboard():
         users = c.fetchall()
         
         # Get settings
-        c.execute("SELECT holiday_mode, holiday_weeks, ab_week, menu_week, menu_week_1, menu_week_2, menu_week_3 FROM settings WHERE id=1")
+        c.execute("SELECT holiday_mode, holiday_weeks, ab_week, menu_week, menu_week_1, menu_week_2, menu_week_3, school_notice FROM settings WHERE id=1")
         settings = c.fetchone()
+        c.execute("SELECT notice_text, created_at FROM school_notice_history ORDER BY created_at DESC LIMIT 4")
+        notice_history = c.fetchall()
         
         db.close()
         
@@ -525,6 +538,7 @@ def admin_dashboard():
         menu_week_1 = settings[4] if settings else ""
         menu_week_2 = settings[5] if settings else ""
         menu_week_3 = settings[6] if settings else ""
+        school_notice = settings[7] if settings else ""
         user_count = len(users) if users else 0
         
         # Convert to list of dicts for easier template use
@@ -549,7 +563,9 @@ def admin_dashboard():
             ,menu_week=menu_week,
             menu_week_1=menu_week_1,
             menu_week_2=menu_week_2,
-            menu_week_3=menu_week_3
+            menu_week_3=menu_week_3,
+            school_notice=school_notice,
+            notice_history=notice_history
         )
         
     except Exception as e:
@@ -874,6 +890,29 @@ def admin_menu_settings():
     except Exception as e:
         print(f"[✗] Menu settings error: {e}")
         flash("Error updating menu rota", "danger")
+
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/notices", methods=["POST"])
+@admin_required
+def admin_notices():
+    """Update the school notice that is included in upcoming emails."""
+
+    try:
+        school_notice = request.form.get("school_notice", "").strip()
+
+        db = get_db()
+        c = db.cursor()
+        c.execute("UPDATE settings SET school_notice=? WHERE id=1", (school_notice,))
+        c.execute("INSERT INTO school_notice_history (notice_text) VALUES (?)", (school_notice,))
+        db.commit()
+        db.close()
+
+        flash("School notice saved for the next email round", "success")
+    except Exception as e:
+        print(f"[✗] School notice error: {e}")
+        flash("Error updating school notices", "danger")
 
     return redirect(url_for("admin_dashboard"))
 
