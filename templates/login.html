@@ -13,12 +13,44 @@
     </div>
 
     <div class="container login-container">
-        <div class="form-card">
+        <div class="card login-hero">
             <div class="card-header">
                 <h1>📧 Ashford School Updates</h1>
-                <p class="subtitle">Your school control centre, reimagined</p>
+                <p class="subtitle">A cleaner student control centre for timetables, homework, and updates</p>
             </div>
 
+            <div class="login-hero-copy">
+                Sign in to a dashboard that feels more like a control centre and less like a form. Choose a dashboard style, keep homework visible, and switch theme locally whenever you want.
+            </div>
+
+            <div class="hero-pill-row">
+                <span class="hero-pill">Homework manager</span>
+                <span class="hero-pill">Dashboard chooser</span>
+                <span class="hero-pill">Local theme modes</span>
+            </div>
+
+            <div class="login-feature-list">
+                <div class="login-feature-item">
+                    <strong>Students</strong>
+                    <div class="help-text">Use your school email, then choose the dashboard you prefer.</div>
+                </div>
+                <div class="login-feature-item">
+                    <strong>Homework</strong>
+                    <div class="help-text">Track, complete, and manage homework from one place.</div>
+                </div>
+                <div class="login-feature-item">
+                    <strong>Themes</strong>
+                    <div class="help-text">Light and dark modes are saved locally on your device.</div>
+                </div>
+            </div>
+
+            <div class="info-box">
+                <h3>🔒 Secure & Private</h3>
+                <p>Encrypted email storage, smarter dashboard choice, and a cleaner student-first experience.</p>
+            </div>
+        </div>
+
+        <div class="form-card login-auth">
             {% if get_flashed_messages() %}
                 {% for category, message in get_flashed_messages(with_categories=true) %}
                     <div class="alert alert-{{ category }}">{{ message }}</div>
@@ -72,12 +104,6 @@
                     Contact administrator for credentials
                 </p>
             </div>
-        </div>
-
-        <div class="info-box">
-            <h3>🔒 Secure & Private</h3>
-            <p>Encrypted email storage, smarter dashboard choice, and a cleaner student-first experience.</p>
-        </div>
 
         <div class="more-info-wrap">
             <input type="checkbox" id="more-info-toggle" class="modal-toggle">
@@ -90,13 +116,14 @@
                         <label for="more-info-toggle" class="modal-close">Close</label>
                     </div>
                     <div class="modal-body">
-                        <p>Ashford School Updates brings timetable editing, PIN protection, dashboard choice, and personalised email updates into one place.</p>
+                        <p>Ashford School Updates brings timetable editing, PIN protection, dashboard choice, homework management, and personalised email updates into one place.</p>
                         <div class="info-box" style="margin-top: 16px;">
                             <p>Use the login tabs to access your account or the admin panel, then switch to the dashboard that fits your workflow.</p>
                         </div>
                     </div>
                 </div>
             </div>
+        </div>
         </div>
     </div>
 

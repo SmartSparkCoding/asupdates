@@ -74,7 +74,7 @@
 
     <div class="topbar admin-topbar">
         <div class="topbar-left">
-            <h2>🔧 Admin Dashboard</h2>
+            <a href="/dashboard/choice" class="topbar-title-link">🔧 Admin Dashboard</a>
         </div>
         <div class="topbar-right">
             <button id="theme-toggle" class="btn btn-small btn-outline" title="Toggle dark mode">🌙 Dark Mode</button>
@@ -90,27 +90,48 @@
 
     <div class="container admin-page">
         <!-- System Status Card -->
-        <div class="card admin-card">
-            <div class="card-header">
+        <details class="card admin-card status-card">
+            <summary class="card-header status-summary">
                 <h3>📊 System Status</h3>
-            </div>
+                <span class="badge badge-info">{{ active_session_count }} active</span>
+            </summary>
             <div class="card-body">
                 <div class="status-grid">
                     <div class="status-item">
-                        <span class="status-label">Total Users:</span>
+                        <span class="status-label">Total Users</span>
                         <span class="status-value">{{ user_count }}</span>
                     </div>
                     <div class="status-item">
-                        <span class="status-label">Database:</span>
+                        <span class="status-label">Uptime</span>
+                        <span class="status-value">{{ app_uptime }}</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Database</span>
                         <span class="status-value">✓ Connected</span>
                     </div>
                     <div class="status-item">
-                        <span class="status-label">Scheduler:</span>
+                        <span class="status-label">Scheduler</span>
                         <span class="status-value">✓ Active</span>
                     </div>
                 </div>
+
+                <div class="info-box" style="margin-top: 18px;">
+                    <h4>Currently logged in</h4>
+                    {% if active_sessions %}
+                        <ul>
+                            {% for active_user in active_sessions %}
+                                <li>
+                                    <strong>{{ active_user.name or active_user.email }}</strong>
+                                    <span class="help-text">{{ active_user.last_seen }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>No active user sessions right now.</p>
+                    {% endif %}
+                </div>
             </div>
-        </div>
+        </details>
 
         <!-- Holiday Settings Card -->
         <div class="card admin-card">

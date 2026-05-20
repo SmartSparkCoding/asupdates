@@ -121,6 +121,19 @@ def init_db():
             """
         )
 
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS active_sessions (
+                session_key TEXT PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                is_admin INTEGER DEFAULT 0,
+                last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+            """
+        )
+
         c.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)")
         c.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_lookup ON users(email_lookup)")
 
@@ -212,6 +225,19 @@ def verify_schema():
                 due_date TEXT NOT NULL,
                 due_time TEXT DEFAULT '23:59',
                 completed INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+            """
+        )
+
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS active_sessions (
+                session_key TEXT PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                is_admin INTEGER DEFAULT 0,
+                last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             )

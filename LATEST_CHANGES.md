@@ -2,6 +2,16 @@
 
 ## ✅ All Changes Made (Current Session)
 
+### 7. Homework Manager, Student Settings, and Dashboard Selector Refresh
+
+- Added a dedicated homework manager page with add, complete, delete, and ordered list management
+- Added a dedicated student settings page with local theme choices and homework email toggle only
+- Reworked the student dashboard so the next homework card opens the homework manager
+- Improved next-lesson handling so it rolls forward to tomorrow, Monday, or after holiday mode
+- Made dashboard titles return to the selector without logging users out
+- Expanded admin system status to show uptime and current active sessions on click
+- Refreshed the login page into a split hero/auth layout and tightened the dashboard choice cards
+
 ### 6. Homework Dashboard and Email Refresh
 
 - Added a top-of-dashboard "Next Homework to Complete" section with a full expandable homework list

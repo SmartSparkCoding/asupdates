@@ -1,5 +1,6 @@
 import json
 import html
+import uuid
 
 from flask import Flask, render_template, request, redirect, session, url_for, flash, jsonify
 from markupsafe import Markup
@@ -60,6 +61,7 @@ ADMIN_EMAILS = [
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
 app.config['SESSION_TYPE'] = 'filesystem'
+APP_START_TIME = datetime.now()
 
 # Initialize database
 if not verify_schema():
@@ -137,6 +139,82 @@ def _fetch_settings():
     settings = c.fetchone()
     db.close()
     return _row_to_dict(settings)
+
+
+def _session_key():
+    if "session_key" not in session:
+        session["session_key"] = uuid.uuid4().hex
+    return session["session_key"]
+
+
+def _track_active_session(user_id, is_admin=False):
+    if not user_id:
+        return
+
+    db = get_db()
+    c = db.cursor()
+    session_key = _session_key()
+    c.execute(
+        """
+        INSERT INTO active_sessions (session_key, user_id, is_admin, last_seen)
+        VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+        ON CONFLICT(session_key) DO UPDATE SET
+            user_id=excluded.user_id,
+            is_admin=excluded.is_admin,
+            last_seen=CURRENT_TIMESTAMP
+        """,
+        (session_key, user_id, 1 if is_admin else 0),
+    )
+    db.commit()
+    db.close()
+
+
+def _clear_active_session():
+    session_key = session.get("session_key")
+    if not session_key:
+        return
+    db = get_db()
+    c = db.cursor()
+    c.execute("DELETE FROM active_sessions WHERE session_key=?", (session_key,))
+    db.commit()
+    db.close()
+
+
+def _app_uptime():
+    delta = datetime.now() - APP_START_TIME
+    total_seconds = int(delta.total_seconds())
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    days, hours = divmod(hours, 24)
+    if days:
+        return f"{days}d {hours}h {minutes}m"
+    if hours:
+        return f"{hours}h {minutes}m"
+    return f"{minutes}m {seconds}s"
+
+
+def _active_logged_in_users(minutes=30):
+    db = get_db()
+    c = db.cursor()
+    c.execute(
+        """
+        SELECT u.id, u.email, u.name, s.last_seen, s.is_admin
+        FROM active_sessions s
+        JOIN users u ON u.id = s.user_id
+        WHERE datetime(s.last_seen) >= datetime('now', ?)
+        ORDER BY datetime(s.last_seen) DESC
+        """,
+        (f"-{minutes} minutes",),
+    )
+    rows = [_row_to_dict(row) for row in c.fetchall()]
+    db.close()
+    return rows
+
+
+@app.before_request
+def _refresh_active_session():
+    if "user_id" in session:
+        _track_active_session(session["user_id"], bool(session.get("is_admin")))
 
 
 def _settings_defaults(settings):
@@ -222,6 +300,58 @@ def _parse_menu_data(menu_text):
         "soup": "",
         "vegetarian": "",
         "dessert": "",
+    }
+
+
+def _parse_period_start(period_time):
+    if not period_time:
+        return None
+    start_text = str(period_time).split("-")[0].strip()
+    try:
+        return datetime.strptime(start_text, "%H:%M").time()
+    except ValueError:
+        return None
+
+
+def _next_lesson_context(schedule_source, current_day, holiday_mode=0):
+    if holiday_mode == 1:
+        return {
+            "next_lesson": None,
+            "next_lesson_label": "After holiday",
+            "next_lesson_hint": "School is paused for the holiday period.",
+        }
+
+    now = datetime.now()
+    today_rows = timetable_day_rows(schedule_source, current_day) if current_day in WEEKDAYS else []
+    current_start_time = now.time()
+
+    for row in today_rows:
+        if not row.get("subject") and not row.get("room"):
+            continue
+        start_time = _parse_period_start(row.get("time"))
+        if start_time and start_time >= current_start_time:
+            return {
+                "next_lesson": row,
+                "next_lesson_label": current_day,
+                "next_lesson_hint": f"Today at {row.get('time')}",
+            }
+
+    current_index = WEEKDAYS.index(current_day) if current_day in WEEKDAYS else -1
+    for offset in range(1, 8):
+        day_name = WEEKDAYS[(current_index + offset) % len(WEEKDAYS)]
+        rows = timetable_day_rows(schedule_source, day_name)
+        next_row = next((row for row in rows if row.get("subject") or row.get("room")), None)
+        if next_row:
+            return {
+                "next_lesson": next_row,
+                "next_lesson_label": day_name,
+                "next_lesson_hint": "Next school day",
+            }
+
+    return {
+        "next_lesson": None,
+        "next_lesson_label": "No lessons found",
+        "next_lesson_hint": "Check your timetable in settings.",
     }
 
 
@@ -478,6 +608,7 @@ def login():
             session["user_id"] = user_id
             session["user_email"] = resolved_email
             session["login_time"] = datetime.now().isoformat()
+            _session_key()
             
             # Check if this email is an admin email
             is_admin_email = resolved_email.lower() in [admin_email.lower() for admin_email in ADMIN_EMAILS]
@@ -485,11 +616,13 @@ def login():
             if is_admin_email:
                 # Admin user without PIN - show dashboard choice
                 session["is_admin_email"] = True
+                _track_active_session(user_id, True)
                 flash("Logged in successfully", "success")
                 return redirect(url_for("dashboard_choice"))
             else:
                 # Normal user - go straight to dashboard
                 session["is_admin"] = False
+                _track_active_session(user_id, False)
                 flash("Logged in successfully", "success")
                 return redirect(url_for("dashboard_choice"))
             
@@ -539,6 +672,7 @@ def pin_verify():
             session["user_id"] = temp_user_id
             session["user_email"] = decrypt_email(user[1]) or temp_user_email
             session["login_time"] = datetime.now().isoformat()
+            _session_key()
             
             # Check if this email is an admin email
             is_admin_email = session["user_email"].lower() in [email.lower() for email in ADMIN_EMAILS]
@@ -548,6 +682,7 @@ def pin_verify():
                 session["is_admin_email"] = True
                 session.pop("temp_user_id", None)
                 session.pop("temp_user_email", None)
+                _track_active_session(temp_user_id, True)
                 flash("Logged in successfully", "success")
                 return redirect(url_for("dashboard_choice"))
             else:
@@ -555,6 +690,7 @@ def pin_verify():
                 session["is_admin"] = False
                 session.pop("temp_user_id", None)
                 session.pop("temp_user_email", None)
+                _track_active_session(temp_user_id, False)
                 flash("Logged in successfully", "success")
                 return redirect(url_for("dashboard_choice"))
             
@@ -628,6 +764,7 @@ def dashboard_choice_new():
 @app.route("/logout")
 def logout():
     """Logout user."""
+    _clear_active_session()
     session.clear()
     flash("Logged out successfully", "info")
     return redirect(url_for("login"))
@@ -704,7 +841,7 @@ def dashboard_new():
         current_schedule_source = schedule_a if current_week == "A" else schedule_b
         current_day_periods = {row["period"]: row for row in timetable_day_rows(current_schedule_source, current_day)} if current_day in WEEKDAYS else {}
 
-        next_lesson = next((row for row in timetable_day_rows(current_schedule_source, current_day) if row.get("subject") or row.get("room")), None)
+        next_lesson_context = _next_lesson_context(current_schedule_source, current_day, settings["holiday_mode"])
         menu_week = max(1, min(3, int(settings.get("menu_week", 1) or 1)))
         lunch_data = _parse_menu_data(settings.get(f"menu_week_{menu_week}", ""))
         homework_db = get_db()
@@ -733,7 +870,9 @@ def dashboard_new():
             current_day=current_day,
             current_schedule=current_day_periods,
             current_week_schedule=timetable_day_rows(current_schedule_source, current_day) if current_day in WEEKDAYS else [],
-            next_lesson=next_lesson,
+            next_lesson=next_lesson_context["next_lesson"],
+            next_lesson_label=next_lesson_context["next_lesson_label"],
+            next_lesson_hint=next_lesson_context["next_lesson_hint"],
             lunch=lunch_data,
             menu_week=menu_week,
             homework_items=homework_items,
@@ -750,6 +889,63 @@ def dashboard_new():
         print(f"[✗] New dashboard error: {e}")
         flash("Error loading new dashboard", "danger")
         return redirect(url_for("dashboard"))
+
+
+@app.route("/dashboard/settings")
+@login_required
+def dashboard_settings():
+    """Dedicated student settings page for the new dashboard."""
+
+    try:
+        user = _fetch_user(session["user_id"])
+        settings = _settings_defaults(_fetch_settings())
+        homework_db = get_db()
+        homework_items = fetch_homework_items(homework_db, user.get("id"))
+        homework_sections = split_homework(homework_items)
+        homework_db.close()
+
+        return render_template(
+            "dashboard_settings.html",
+            user=user,
+            email=user.get("email", session.get("user_email")),
+            name=user.get("name", ""),
+            homework_in_email=user.get("homework_in_email", 1),
+            email_send_time=user.get("email_send_time", "08:00"),
+            current_theme="system",
+            homework_items=homework_items,
+            homework_sections=homework_sections,
+            holiday_mode=settings["holiday_mode"],
+        )
+
+    except Exception as e:
+        print(f"[✗] Dashboard settings error: {e}")
+        flash("Error loading settings", "danger")
+        return redirect(url_for("dashboard_new"))
+
+
+@app.route("/homework")
+@login_required
+def homework_dashboard():
+    """Dedicated homework management page."""
+
+    try:
+        user = _fetch_user(session["user_id"])
+        homework_db = get_db()
+        homework_items = fetch_homework_items(homework_db, user.get("id"))
+        homework_sections = split_homework(homework_items)
+        homework_db.close()
+
+        return render_template(
+            "homework.html",
+            user=user,
+            homework_items=homework_items,
+            homework_sections=homework_sections,
+        )
+
+    except Exception as e:
+        print(f"[✗] Homework dashboard error: {e}")
+        flash("Error loading homework area", "danger")
+        return redirect(url_for("dashboard_new"))
 
 
 @app.route("/homework/add", methods=["POST"])
@@ -1061,6 +1257,7 @@ def admin_dashboard():
             }
             for item in notice_history
         ]
+        active_sessions = _active_logged_in_users()
         
         # Convert to list of dicts for easier template use
         homework_by_user = {}
@@ -1096,6 +1293,9 @@ def admin_dashboard():
             weekdays=WEEKDAYS,
             menu_fields=["main", "sides", "pasta_bar", "street_food", "potatoes", "soup", "vegetarian", "dessert"],
             homework_items=homework_rows,
+            app_uptime=_app_uptime(),
+            active_sessions=active_sessions,
+            active_session_count=len(active_sessions),
         )
         
     except Exception as e:

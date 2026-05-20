@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Settings - Ashford School Updates</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="feedback-banner">
+        <a href="https://hackanomous-rsvp.fillout.com/t/kYWQReDmZkus" target="_blank" class="feedback-btn">💬 Give feedback here</a>
+    </div>
+
+    <div class="topbar">
+        <div class="topbar-left">
+            <a href="/dashboard/choice" class="topbar-title-link">⚙ Dashboard Settings</a>
+        </div>
+        <div class="topbar-right">
+            <a href="/dashboard/new" class="btn btn-small btn-outline">Back to Dashboard</a>
+            <a href="/logout" class="btn btn-small btn-outline">Logout</a>
+        </div>
+    </div>
+
+    {% if get_flashed_messages() %}
+        {% for category, message in get_flashed_messages(with_categories=true) %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="container">
+        <div class="card settings-hero">
+            <div class="card-header">
+                <h3>🎛 Student Settings</h3>
+            </div>
+            <div class="card-body">
+                <div class="info-box">
+                    <h4>Theme</h4>
+                    <p>Theme choice is saved locally on this device.</p>
+                    <div class="theme-choice-grid" style="margin-top: 14px;">
+                        <button class="btn btn-secondary theme-choice-button" data-theme-choice="light" type="button">Light</button>
+                        <button class="btn btn-secondary theme-choice-button" data-theme-choice="dark" type="button">Dark</button>
+                        <button class="btn btn-secondary theme-choice-button" data-theme-choice="system" type="button">Match System</button>
+                    </div>
+                </div>
+
+                <div class="info-box" style="margin-top: 18px;">
+                    <h4>Homework Email</h4>
+                    <p>Choose whether homework appears in your daily email updates.</p>
+                    <form method="POST" action="/dashboard/toggle-homework-email" class="form-group" style="margin-top: 12px; max-width: 420px;">
+                        <button type="submit" class="btn {% if homework_in_email == 1 %}btn-warning{% else %}btn-success{% endif %}">
+                            {% if homework_in_email == 1 %}
+                                Hide Homework from Emails
+                            {% else %}
+                                Include Homework in Emails
+                            {% endif %}
+                        </button>
+                    </form>
+                    <div class="help-text" style="margin-top: 10px;">
+                        {% if homework_in_email == 1 %}
+                            Homework is currently included in your email updates.
+                        {% else %}
+                            Homework is currently hidden from your email updates.
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="info-box" style="margin-top: 18px;">
+                    <h4>Quick Links</h4>
+                    <p><a href="/homework">Open homework manager</a> or <a href="/dashboard/new">return to the dashboard</a>.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const themeButtons = document.querySelectorAll('[data-theme-choice]');
+        const html = document.documentElement;
+
+        function applyStoredTheme() {
+            const storedTheme = localStorage.getItem('theme');
+            if (storedTheme === 'dark') {
+                html.setAttribute('data-theme', 'dark');
+            } else if (storedTheme === 'light') {
+                html.setAttribute('data-theme', 'light');
+            } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                html.setAttribute('data-theme', 'dark');
+            } else {
+                html.removeAttribute('data-theme');
+            }
+        }
+
+        function syncThemeButtons() {
+            const storedTheme = localStorage.getItem('theme') || 'system';
+            themeButtons.forEach((button) => {
+                button.classList.toggle('active', button.dataset.themeChoice === storedTheme);
+            });
+        }
+
+        themeButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                const choice = button.dataset.themeChoice;
+                if (choice === 'system') {
+                    localStorage.removeItem('theme');
+                } else {
+                    localStorage.setItem('theme', choice);
+                }
+                applyStoredTheme();
+                syncThemeButtons();
+            });
+        });
+
+        applyStoredTheme();
+        syncThemeButtons();
+    </script>
+</body>
+</html>

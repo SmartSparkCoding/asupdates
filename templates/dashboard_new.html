@@ -84,10 +84,10 @@
 
     <div class="topbar">
         <div class="topbar-left">
-            <h2>🎓 Student Dashboard</h2>
+            <a href="/dashboard/choice" class="topbar-title-link">🎓 Student Dashboard</a>
         </div>
         <div class="topbar-right">
-            <a href="/dashboard" class="btn btn-small btn-outline settings-link" title="Open settings">⚙ Settings</a>
+            <a href="/dashboard/settings" class="btn btn-small btn-outline settings-link" title="Open settings">⚙ Settings</a>
             <button id="theme-toggle" class="btn btn-small btn-outline" title="Toggle dark mode">🌙 Dark Mode</button>
             <a href="/logout" class="btn btn-small btn-outline">Logout</a>
         </div>
@@ -112,14 +112,14 @@
                     {% if next_lesson and next_lesson.subject %}
                         {{ next_lesson.subject }}
                     {% else %}
-                        No lesson found
+                        {{ next_lesson_label }}
                     {% endif %}
                 </div>
                 <div class="help-text">
                     {% if next_lesson and next_lesson.room %}
-                        Room {{ next_lesson.room }}
+                        {{ next_lesson_label }} • Room {{ next_lesson.room }}
                     {% else %}
-                        Check your timetable in settings
+                        {{ next_lesson_hint }}
                     {% endif %}
                 </div>
             </div>
@@ -135,7 +135,7 @@
             </div>
         </div>
 
-        <div class="card homework-feature">
+        <div class="card homework-feature homework-link-card" role="link" tabindex="0" data-href="/homework">
             <div class="card-header">
                 <h3>📝 Next Homework to Complete</h3>
                 {% if homework_sections.pending_count %}
@@ -146,54 +146,25 @@
             </div>
             <div class="card-body">
                 {% if homework_sections.next_homework %}
-                    <div class="homework-summary-grid">
-                        <div class="homework-next">
-                            <div class="homework-next-title">
-                                <div>
-                                    <h4>{{ homework_sections.next_homework.subject }}</h4>
-                                    <p class="card-description">{{ homework_sections.next_homework.title }}</p>
-                                </div>
-                                {% if homework_sections.next_homework.completed %}
-                                    <span class="badge badge-secondary">Completed</span>
-                                {% else %}
-                                    <span class="badge badge-info">Next up</span>
-                                {% endif %}
+                    <div class="homework-next">
+                        <div class="homework-next-title">
+                            <div>
+                                <h4>{{ homework_sections.next_homework.subject }}</h4>
+                                <p class="card-description">{{ homework_sections.next_homework.title }}</p>
                             </div>
-                            <p class="help-text">
-                                Due {{ homework_sections.next_homework.due_date }} at {{ homework_sections.next_homework.due_time }}
-                            </p>
-                            {% if homework_sections.next_homework.details %}
-                                <p>{{ homework_sections.next_homework.details }}</p>
+                            {% if homework_sections.next_homework.completed %}
+                                <span class="badge badge-secondary">Completed</span>
+                            {% else %}
+                                <span class="badge badge-warning">Next up</span>
                             {% endif %}
                         </div>
-                        <div>
-                            <details class="homework-details">
-                                <summary class="btn btn-secondary">View full homework list</summary>
-                                <div class="homework-list">
-                                    {% for item in homework_items %}
-                                        <div class="homework-item {% if item.completed %}completed{% endif %}">
-                                            <div class="homework-item-main">
-                                                <strong>{{ item.subject }}</strong> - {{ item.title }}
-                                                <p>{{ item.details or 'No extra details provided.' }}</p>
-                                            </div>
-                                            <div class="homework-item-meta">
-                                                <span>{{ item.due_date }} {{ item.due_time }}</span>
-                                                {% if item.completed %}
-                                                    <span class="badge badge-secondary">Done</span>
-                                                {% else %}
-                                                    <span class="badge badge-warning">Pending</span>
-                                                {% endif %}
-                                            </div>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            </details>
-                        </div>
+                        <p class="help-text">Due {{ homework_sections.next_homework.due_date }} at {{ homework_sections.next_homework.due_time }}</p>
+                        <p class="help-text">Click anywhere to open the homework area and manage your full list.</p>
                     </div>
                 {% else %}
                     <div class="empty-homework">
                         <strong>No homework yet.</strong>
-                        <p class="help-text" style="margin-top: 8px;">Add homework from the tracker below and it will appear here.</p>
+                        <p class="help-text" style="margin-top: 8px;">Open the homework area to add your first task.</p>
                     </div>
                 {% endif %}
             </div>
@@ -251,122 +222,6 @@
             </div>
         </div>
 
-        <div class="card">
-            <div class="card-header">
-                <h3>⚙ Homework Settings</h3>
-            </div>
-            <div class="card-body">
-                <div class="homework-settings-note info-box">
-                    <h4>Homework in email updates</h4>
-                    <p>Choose whether homework appears in your daily email. Your dashboard still keeps the full homework list either way.</p>
-                </div>
-
-                <form method="POST" action="/dashboard/toggle-homework-email" class="form-group" style="margin-top: 16px;">
-                    <button type="submit" class="btn {% if homework_in_email == 1 %}btn-warning{% else %}btn-success{% endif %}">
-                        {% if homework_in_email == 1 %}
-                            Hide Homework from Emails
-                        {% else %}
-                            Include Homework in Emails
-                        {% endif %}
-                    </button>
-                </form>
-
-                <div class="info-box" style="margin-top: 16px;">
-                    <strong>Current status:</strong>
-                    {% if homework_in_email == 1 %}
-                        Homework is included in your daily email.
-                    {% else %}
-                        Homework is hidden from your daily email.
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="card-header">
-                <h3>📝 Homework Tracker</h3>
-            </div>
-            <div class="card-body">
-                <form method="POST" action="/homework/add" class="form-group" style="margin-bottom: 20px;">
-                    <div class="account-grid">
-                        <div class="form-item">
-                            <label for="homework-subject">Subject</label>
-                            <input type="text" id="homework-subject" name="subject" placeholder="e.g. Maths" required>
-                        </div>
-                        <div class="form-item">
-                            <label for="homework-title">Homework</label>
-                            <input type="text" id="homework-title" name="title" placeholder="Task title" required>
-                        </div>
-                        <div class="form-item">
-                            <label for="homework-due-date">Due Date</label>
-                            <input type="date" id="homework-due-date" name="due_date" required>
-                        </div>
-                        <div class="form-item">
-                            <label for="homework-due-time">Due Time</label>
-                            <input type="time" id="homework-due-time" name="due_time" value="23:59">
-                        </div>
-                    </div>
-                    <div class="form-item">
-                        <label for="homework-details">Details</label>
-                        <textarea id="homework-details" name="details" class="menu-textarea" placeholder="What needs doing?"></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Add Homework</button>
-                </form>
-
-                {% if homework_sections.pending_count %}
-                    {% if homework_sections.overdue %}
-                        <div class="info-box" style="margin-bottom: 16px;">
-                            <h4>Overdue</h4>
-                            <ul>
-                                {% for item in homework_sections.overdue %}
-                                    <li>
-                                        <strong>{{ item.subject }}</strong> - {{ item.title }} ({{ item.due_date }} {{ item.due_time }})
-                                        <form method="POST" action="/homework/toggle/{{ item.id }}" style="display:inline; margin-left: 8px;">
-                                            <button type="submit" class="btn btn-small btn-success">Mark Done</button>
-                                        </form>
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    {% endif %}
-
-                    {% if homework_sections.due_today %}
-                        <div class="info-box" style="margin-bottom: 16px;">
-                            <h4>Due Today</h4>
-                            <ul>
-                                {% for item in homework_sections.due_today %}
-                                    <li>
-                                        <strong>{{ item.subject }}</strong> - {{ item.title }} ({{ item.due_time }})
-                                        <form method="POST" action="/homework/toggle/{{ item.id }}" style="display:inline; margin-left: 8px;">
-                                            <button type="submit" class="btn btn-small btn-success">{% if item.completed %}Undo{% else %}Done{% endif %}</button>
-                                        </form>
-                                        <form method="POST" action="/homework/delete/{{ item.id }}" style="display:inline; margin-left: 6px;">
-                                            <button type="submit" class="btn btn-small btn-outline">Delete</button>
-                                        </form>
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    {% endif %}
-
-                    {% if homework_sections.due_tomorrow %}
-                        <div class="info-box">
-                            <h4>Due Tomorrow</h4>
-                            <ul>
-                                {% for item in homework_sections.due_tomorrow %}
-                                    <li><strong>{{ item.subject }}</strong> - {{ item.title }} ({{ item.due_time }})</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                    {% endif %}
-                {% else %}
-                    <div class="empty-homework">
-                        <strong>No homework yet.</strong>
-                        <p class="help-text" style="margin-top: 8px;">Add your first homework item above.</p>
-                    </div>
-                {% endif %}
-            </div>
-        </div>
     </div>
 
     <footer class="page-footer">
@@ -386,6 +241,19 @@
             themeToggle.textContent = newTheme === 'dark' ? '🌟 Light Mode' : '🌙 Dark Mode';
         });
         if (savedTheme === 'dark') themeToggle.textContent = '🌟 Light Mode';
+
+        document.querySelectorAll('[data-href]').forEach((card) => {
+            const navigate = () => {
+                window.location.href = card.dataset.href;
+            };
+            card.addEventListener('click', navigate);
+            card.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    navigate();
+                }
+            });
+        });
     </script>
 </body>
 </html>
