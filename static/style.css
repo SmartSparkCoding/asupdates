@@ -374,7 +374,7 @@ a:hover {
     width: min(1100px, 100%);
 }
 
-.modal-toggle:checked + .btn + .modal-overlay {
+.modal-toggle:checked ~ .modal-overlay {
     display: flex;
 }
 

@@ -12,6 +12,21 @@
         <a href="https://hackanomous-rsvp.fillout.com/t/kYWQReDmZkus" target="_blank" class="feedback-btn">💬 Give feedback here</a>
     </div>
 
+    {% set timetable_editor_modal_id = "dashboard-timetable-editor" %}
+    {% set timetable_editor_title = "Timetable Editor" %}
+    {% set timetable_editor_description = "Update your period timetable and daily activities here." %}
+    {% set timetable_editor_sections = [
+        {'label': 'Week A', 'prefix': 'timetable_a', 'week_data': timetable_a, 'help_text': 'Each day has its own period timetable.'},
+        {'label': 'Week B', 'prefix': 'timetable_b', 'week_data': timetable_b, 'help_text': 'Keep your second week in sync here.'},
+    ] %}
+    {% set timetable_editor_day_title = "Before School, After School & Lunch Clubs" %}
+    {% set timetable_editor_day_help_text = "Add your clubs and activities for each weekday." %}
+    {% set timetable_editor_submit_class = "btn btn-primary" %}
+    {% set timetable_editor_submit_label = "Save Timetables" %}
+    {% set timetable_editor_wrap_form = true %}
+    {% set timetable_editor_action = "/dashboard/update-timetable" %}
+    {% include "partials/timetable_editor.html" %}
+
     <div class="topbar">
         <div class="topbar-left">
             <h2>📊 Dashboard</h2>
@@ -72,22 +87,7 @@
             </div>
             <div class="card-body">
                 <p class="card-description">Edit your Week A and Week B lesson timetable, plus your daily schedule, in one place.</p>
-                <form method="POST" action="/dashboard/update-timetable" class="form-group">
-                    {% set timetable_editor_modal_id = "dashboard-timetable-editor" %}
-                    {% set timetable_editor_trigger_label = "Edit Timetables" %}
-                    {% set timetable_editor_trigger_class = "btn btn-primary modal-trigger-btn" %}
-                    {% set timetable_editor_title = "Timetable Editor" %}
-                    {% set timetable_editor_description = "Update your period timetable and daily activities here." %}
-                    {% set timetable_editor_sections = [
-                        {'label': 'Week A', 'prefix': 'timetable_a', 'week_data': timetable_a, 'help_text': 'Each day has its own period timetable.'},
-                        {'label': 'Week B', 'prefix': 'timetable_b', 'week_data': timetable_b, 'help_text': 'Keep your second week in sync here.'},
-                    ] %}
-                    {% set timetable_editor_day_title = "Before School, After School & Lunch Clubs" %}
-                    {% set timetable_editor_day_help_text = "Add your clubs and activities for each weekday." %}
-                    {% set timetable_editor_submit_class = "btn btn-primary" %}
-                    {% set timetable_editor_submit_label = "Save Timetables" %}
-                    {% include "partials/timetable_editor.html" %}
-                </form>
+                <label for="dashboard-timetable-editor" class="btn btn-primary modal-trigger-btn">Edit Timetables</label>
             </div>
         </div>
 
