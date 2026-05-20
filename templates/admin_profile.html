@@ -36,7 +36,8 @@
                 <div class="profile-summary">
                     <strong>Email:</strong> {{ user.email }}<br>
                     <strong>PIN:</strong> {% if user.pin %}Set{% else %}Not set{% endif %}<br>
-                    <strong>Email updates:</strong> {% if send_emails == 1 %}On{% else %}Off{% endif %}
+                    <strong>Email updates:</strong> {% if send_emails == 1 %}On{% else %}Off{% endif %}<br>
+                    <strong>Homework in emails:</strong> {% if homework_in_email == 1 %}On{% else %}Off{% endif %}
                 </div>
 
                 <form method="POST" class="form-group">
@@ -60,6 +61,13 @@
                                 Enable for this user
                             </label>
                         </div>
+                        <div class="form-item">
+                            <label for="homework_in_email">Homework Email</label>
+                            <label style="display:flex; align-items:center; gap:10px; font-weight:600; color: var(--navy);">
+                                <input type="checkbox" id="homework_in_email" name="homework_in_email" {% if homework_in_email == 1 %}checked{% endif %}>
+                                Include homework in daily email
+                            </label>
+                        </div>
                     </div>
 
                     {% set timetable_editor_modal_id = "admin-profile-timetable-editor" %}
@@ -79,6 +87,59 @@
                     {% include "partials/timetable_editor.html" %}
 
                 </form>
+
+                <div class="card" id="homework" style="margin-top: 24px;">
+                    <div class="card-header">
+                        <h3>📝 Homework</h3>
+                        <a href="/admin/email-preview/{{ user.id }}" target="_blank" class="btn btn-small btn-primary">Preview Homework Email</a>
+                    </div>
+                    <div class="card-body">
+                        {% if homework_sections.pending_count %}
+                            <div class="homework-summary-grid">
+                                <div class="homework-next">
+                                    {% if homework_sections.next_homework %}
+                                        <div class="homework-next-title">
+                                            <div>
+                                                <h4>{{ homework_sections.next_homework.subject }}</h4>
+                                                <p class="card-description">{{ homework_sections.next_homework.title }}</p>
+                                            </div>
+                                            {% if homework_sections.next_homework.completed %}
+                                                <span class="badge badge-secondary">Completed</span>
+                                            {% else %}
+                                                <span class="badge badge-warning">Next up</span>
+                                            {% endif %}
+                                        </div>
+                                        <p class="help-text">Due {{ homework_sections.next_homework.due_date }} at {{ homework_sections.next_homework.due_time }}</p>
+                                        {% if homework_sections.next_homework.details %}
+                                            <p>{{ homework_sections.next_homework.details }}</p>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+
+                                <div class="homework-list">
+                                    {% for item in homework_items %}
+                                        <div class="homework-item {% if item.completed %}completed{% endif %}">
+                                            <div class="homework-item-main">
+                                                <strong>{{ item.subject }}</strong> - {{ item.title }}
+                                                <p>{{ item.details or 'No extra details provided.' }}</p>
+                                            </div>
+                                            <div class="homework-item-meta">
+                                                <span>{{ item.due_date }} {{ item.due_time }}</span>
+                                                {% if item.completed %}
+                                                    <span class="badge badge-secondary">Done</span>
+                                                {% else %}
+                                                    <span class="badge badge-warning">Pending</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% else %}
+                            <p class="empty-state">No homework for this student yet.</p>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
         </div>
     </div>

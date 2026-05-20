@@ -2,6 +2,14 @@
 
 ## ✅ All Changes Made (Current Session)
 
+### 6. Homework Dashboard and Email Refresh
+
+- Added a top-of-dashboard "Next Homework to Complete" section with a full expandable homework list
+- Added student homework email settings so homework can be included or hidden in daily emails
+- Added homework visibility and full homework preview controls to the admin user profile and roster
+- Expanded the email template so previews and 8am updates include the full homework list
+- Reduced the login page "More Info" button size and tightened spacing on the refreshed pages
+
 ### 5. Encrypted Emails, Dashboard Choice, and Homework Tracker
 
 - Added encrypted-at-rest email storage with normalized lookup keys for login and admin edits

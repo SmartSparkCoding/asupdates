@@ -39,7 +39,7 @@
                 </div>
 
                 <div class="prompt-actions">
-                    <a href="/admin/email-preview/{{ user.id }}" target="_blank" class="btn btn-primary">Preview in New Tab</a>
+                    <a href="/admin/email-preview/{{ user.id }}" target="_blank" class="btn btn-primary">Preview Full Email</a>
                     <form method="POST" action="/admin/send-email/{{ user.id }}">
                         <button type="submit" class="btn btn-success btn-large">Send Email Now</button>
                     </form>
@@ -47,7 +47,7 @@
 
                 <div class="info-box" style="margin-top: 20px;">
                     <h4>Preview details</h4>
-                    <p>The preview opens the fully populated HTML email for this user in a new tab so you can check the exact content before sending.</p>
+                    <p>The preview opens the fully populated HTML email for this user in a new tab, including the full homework section, so you can check the exact content before sending.</p>
                 </div>
             </div>
         </div>

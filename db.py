@@ -36,7 +36,7 @@ def _ensure_settings_row(conn):
 
 def _ensure_user_defaults(conn):
     cursor = conn.cursor()
-    cursor.execute("UPDATE users SET name = COALESCE(name, ''), timetable_a = COALESCE(timetable_a, ''), timetable_b = COALESCE(timetable_b, '')")
+    cursor.execute("UPDATE users SET name = COALESCE(name, ''), timetable_a = COALESCE(timetable_a, ''), timetable_b = COALESCE(timetable_b, ''), homework_in_email = COALESCE(homework_in_email, 1)")
     conn.commit()
 
 def get_db():
@@ -70,6 +70,7 @@ def init_db():
                 send_emails INTEGER DEFAULT 1,
                 timetable_a TEXT DEFAULT '',
                 timetable_b TEXT DEFAULT '',
+                homework_in_email INTEGER DEFAULT 1,
                 email_send_time TEXT DEFAULT '08:00',
                 timezone TEXT DEFAULT 'Europe/London',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -154,6 +155,7 @@ def verify_schema():
                 send_emails INTEGER DEFAULT 1,
                 timetable_a TEXT DEFAULT '',
                 timetable_b TEXT DEFAULT '',
+                homework_in_email INTEGER DEFAULT 1,
                 email_send_time TEXT DEFAULT '08:00',
                 timezone TEXT DEFAULT 'Europe/London',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -179,6 +181,7 @@ def verify_schema():
         _ensure_column(conn, "users", "email_lookup", "TEXT DEFAULT ''")
         _ensure_column(conn, "users", "timetable_a", "TEXT DEFAULT ''")
         _ensure_column(conn, "users", "timetable_b", "TEXT DEFAULT ''")
+        _ensure_column(conn, "users", "homework_in_email", "INTEGER DEFAULT 1")
         _ensure_column(conn, "users", "day_timetable", "TEXT DEFAULT ''")
         _ensure_column(conn, "users", "email_send_time", "TEXT DEFAULT '08:00'")
         _ensure_column(conn, "users", "timezone", "TEXT DEFAULT 'Europe/London'")

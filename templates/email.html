@@ -112,6 +112,31 @@
             margin: 15px 0;
             border-radius: 4px;
         }
+        .homework-block {
+            background: #ecfdf5;
+            border-left: 4px solid #14b8a6;
+        }
+        .homework-list {
+            margin: 12px 0 0 0;
+            padding: 0;
+            list-style: none;
+        }
+        .homework-item {
+            margin-bottom: 10px;
+            padding: 12px 14px;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+        }
+        .homework-item.completed {
+            opacity: 0.72;
+            background: #f8fafc;
+        }
+        .homework-item-meta {
+            font-size: 12px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
         .emoji {
             font-size: 18px;
             margin-right: 5px;
@@ -225,12 +250,23 @@
                 {% endif %}
 
                 <!-- HOMEWORK SECTION -->
-                {% if homework_summary and (homework_summary.due_today or homework_summary.due_tomorrow or homework_summary.overdue) %}
-                <div class="section">
+                {% if homework_enabled and homework_items %}
+                <div class="section homework-block">
                     <div class="section-title">
                         <span class="emoji">📝</span> Homework
                     </div>
                     <div class="section-content">
+                        {% if homework_summary.next_homework %}
+                            <strong>Next Homework to Complete</strong>
+                            <div class="homework-item {% if homework_summary.next_homework.completed %}completed{% endif %}">
+                                <div><strong>{{ homework_summary.next_homework.subject }}</strong> - {{ homework_summary.next_homework.title }}</div>
+                                <div class="homework-item-meta">Due {{ homework_summary.next_homework.due_date }} at {{ homework_summary.next_homework.due_time }}</div>
+                                {% if homework_summary.next_homework.details %}
+                                    <div class="homework-item-meta">{{ homework_summary.next_homework.details }}</div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
                         {% if homework_summary.overdue %}
                             <strong>Overdue</strong>
                             <ul>
@@ -255,6 +291,19 @@
                                 {% endfor %}
                             </ul>
                         {% endif %}
+
+                        <strong>Full Homework List</strong>
+                        <div class="homework-list">
+                            {% for item in homework_items %}
+                                <div class="homework-item {% if item.completed %}completed{% endif %}">
+                                    <div><strong>{{ item.subject }}</strong> - {{ item.title }}</div>
+                                    <div class="homework-item-meta">Due {{ item.due_date }} at {{ item.due_time }}</div>
+                                    {% if item.details %}
+                                        <div class="homework-item-meta">{{ item.details }}</div>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
                     </div>
                 </div>
                 {% endif %}

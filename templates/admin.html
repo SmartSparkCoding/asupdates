@@ -239,6 +239,7 @@
                                     <th>ID</th>
                                     <th>Name</th>
                                     <th>Email</th>
+                                    <th>Homework</th>
                                     <th>Status</th>
                                     <th>Created</th>
                                     <th>Actions</th>
@@ -250,6 +251,16 @@
                                         <td class="id-cell">#{{ user.id }}</td>
                                         <td class="email-cell">{{ user.name or '—' }}</td>
                                         <td class="email-cell">{{ user.email }}</td>
+                                        <td>
+                                            {% if user.homework_count %}
+                                                <strong>{{ user.pending_homework_count }}</strong> pending / {{ user.homework_count }} total
+                                                {% if user.next_homework %}
+                                                    <div class="help-text">Next: {{ user.next_homework.subject }} - {{ user.next_homework.title }}</div>
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="badge badge-secondary">None</span>
+                                            {% endif %}
+                                        </td>
                                         <td class="status-cell">
                                             {% if user.send_emails == 1 %}
                                                 <span class="badge badge-success">✓ Emails On</span>
@@ -266,6 +277,7 @@
                                         </td>
                                         <td class="actions-cell">
                                             <a href="/admin/email/{{ user.id }}" class="btn btn-tiny btn-info">Email</a>
+                                            <a href="/admin/email-preview/{{ user.id }}" target="_blank" class="btn btn-tiny btn-success">Homework Preview</a>
                                             <a href="/admin/user/{{ user.id }}" class="btn btn-tiny btn-primary">Profile</a>
                                             <form method="POST" action="/admin/delete-user/{{ user.id }}" style="display:inline;" onsubmit="return confirm('Delete {{ user.email }}?');">
                                                 <button type="submit" class="btn btn-tiny btn-danger">Delete</button>

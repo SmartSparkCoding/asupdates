@@ -564,11 +564,111 @@ a:hover {
     display: flex;
     justify-content: center;
     position: relative;
+    max-width: 320px;
+    margin: 0 auto;
 }
 
 .more-info-trigger {
-    width: 100%;
-    max-width: 420px;
+    width: auto;
+    min-width: 180px;
+    max-width: 100%;
+}
+
+.homework-feature {
+    overflow: hidden;
+}
+
+.homework-summary-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 18px;
+    align-items: start;
+}
+
+.homework-next {
+    background: linear-gradient(180deg, rgba(236, 253, 245, 0.72) 0%, rgba(255, 255, 255, 0.92) 100%);
+    border: 1px solid rgba(20, 184, 166, 0.16);
+    border-radius: 18px;
+    padding: 18px;
+    box-shadow: var(--shadow-soft);
+}
+
+.homework-next-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.homework-next-title h4 {
+    margin: 0;
+}
+
+.homework-details {
+    margin-top: 14px;
+}
+
+.homework-details summary {
+    list-style: none;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+}
+
+.homework-details summary::-webkit-details-marker {
+    display: none;
+}
+
+.homework-list {
+    margin-top: 16px;
+    display: grid;
+    gap: 12px;
+}
+
+.homework-item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: start;
+    padding: 16px 18px;
+    border-radius: 16px;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: var(--shadow-soft);
+}
+
+.homework-item.completed {
+    opacity: 0.72;
+    filter: saturate(0.75);
+}
+
+.homework-item.completed .homework-item-main strong,
+.homework-item.completed .homework-item-main p,
+.homework-item.completed .homework-item-meta {
+    color: var(--gray);
+}
+
+.homework-item-main p {
+    margin-top: 6px;
+    color: var(--gray-dark);
+}
+
+.homework-item-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.homework-settings-note {
+    margin-top: 10px;
+}
+
+.homework-settings-note p {
+    margin-top: 6px;
 }
 
 .schedule-editor-grid {

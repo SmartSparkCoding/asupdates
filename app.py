@@ -113,7 +113,7 @@ def _fetch_user(user_id):
     c = db.cursor()
     c.execute(
         """
-        SELECT id, email, name, pin, send_emails, timetable_a, timetable_b, day_timetable, created_at
+        SELECT id, email, name, pin, send_emails, timetable_a, timetable_b, homework_in_email, day_timetable, created_at
         FROM users
         WHERE id=?
         """,
@@ -252,7 +252,8 @@ def _build_user_email_context(user, settings, external_url_base=None):
     current_day_timetable = day_timetable.get(current_day, {}) if current_day in WEEKDAYS else {}
     homework_items = []
     homework_summary = {}
-    if user.get("id"):
+    homework_enabled = user.get("homework_in_email", 1) == 1
+    if user.get("id") and homework_enabled:
         db = get_db()
         homework_items = fetch_homework_items(db, user.get("id"))
         homework_summary = homework_email_summary(homework_items)
@@ -286,6 +287,7 @@ def _build_user_email_context(user, settings, external_url_base=None):
         ],
         "homework_items": homework_items,
         "homework_summary": homework_summary,
+        "homework_enabled": homework_enabled,
         "school_notice": school_notice,
         "school_notice_lines": _notice_lines(school_notice),
         "period_order": PERIOD_ORDER,
@@ -657,6 +659,7 @@ def dashboard():
             email=user.get("email", session.get("user_email")),
             name=user.get("name", ""),
             send_emails=user.get("send_emails", 1),
+            homework_in_email=user.get("homework_in_email", 1),
             email_send_time=user.get("email_send_time", "08:00"),
             holiday_mode=settings["holiday_mode"],
             holiday_weeks=settings["holiday_weeks"],
@@ -715,6 +718,7 @@ def dashboard_new():
             email=user.get("email", session.get("user_email")),
             name=user.get("name", ""),
             send_emails=user.get("send_emails", 1),
+            homework_in_email=user.get("homework_in_email", 1),
             email_send_time=user.get("email_send_time", "08:00"),
             holiday_mode=settings["holiday_mode"],
             holiday_weeks=settings["holiday_weeks"],
@@ -975,6 +979,31 @@ def dashboard_update_email_time():
     return redirect(url_for("dashboard"))
 
 
+@app.route("/dashboard/toggle-homework-email", methods=["POST"])
+@login_required
+def dashboard_toggle_homework_email():
+    """Toggle whether homework is included in daily emails."""
+
+    try:
+        db = get_db()
+        c = db.cursor()
+        c.execute("SELECT homework_in_email FROM users WHERE id=?", (session["user_id"],))
+        result = c.fetchone()
+        current = result[0] if result else 1
+        new_value = 1 - current
+
+        c.execute("UPDATE users SET homework_in_email=? WHERE id=?", (new_value, session["user_id"]))
+        db.commit()
+        db.close()
+
+        flash(f"Homework will now be {'included' if new_value else 'hidden'} in daily emails", "success")
+    except Exception as e:
+        print(f"[✗] Toggle homework email error: {e}")
+        flash("Error updating homework setting", "danger")
+
+    return redirect(url_for("dashboard"))
+
+
 # ============================================================================
 # ADMIN DASHBOARD
 # ============================================================================
@@ -995,6 +1024,15 @@ def admin_dashboard():
             ORDER BY created_at DESC
         """)
         users = c.fetchall()
+
+        c.execute(
+            """
+            SELECT user_id, id, subject, title, due_date, due_time, completed
+            FROM homework_items
+            ORDER BY due_date ASC, due_time ASC, created_at DESC
+            """
+        )
+        homework_rows = c.fetchall()
         
         # Get settings
         c.execute("SELECT holiday_mode, holiday_weeks, ab_week, menu_week, menu_week_1, menu_week_2, menu_week_3, school_notice FROM settings WHERE id=1")
@@ -1025,10 +1063,21 @@ def admin_dashboard():
         ]
         
         # Convert to list of dicts for easier template use
+        homework_by_user = {}
+        for homework in homework_rows or []:
+            homework_item = _row_to_dict(homework)
+            homework_by_user.setdefault(homework_item.get("user_id"), []).append(homework_item)
+
         users_list = []
         if users:
             for u in users:
-                users_list.append(_row_to_dict(u))
+                user_dict = _row_to_dict(u)
+                user_homework = homework_by_user.get(user_dict.get("id"), [])
+                user_homework_sections = split_homework(user_homework)
+                user_dict["homework_count"] = len(user_homework)
+                user_dict["pending_homework_count"] = user_homework_sections["pending_count"]
+                user_dict["next_homework"] = user_homework_sections["next_homework"]
+                users_list.append(user_dict)
         
         return render_template(
             "admin.html",
@@ -1046,6 +1095,7 @@ def admin_dashboard():
             notice_history=notice_history_rendered,
             weekdays=WEEKDAYS,
             menu_fields=["main", "sides", "pasta_bar", "street_food", "potatoes", "soup", "vegetarian", "dessert"],
+            homework_items=homework_rows,
         )
         
     except Exception as e:
@@ -1181,6 +1231,7 @@ def admin_user_profile(user_id):
             name = request.form.get("name", "").strip()
             pin = request.form.get("pin", "").strip()
             send_emails = 1 if request.form.get("send_emails") == "on" else 0
+            homework_in_email = 1 if request.form.get("homework_in_email") == "on" else 0
             timetable_a = json.dumps(_timetable_form_data("timetable_a", request.form))
             timetable_b = json.dumps(_timetable_form_data("timetable_b", request.form))
             day_timetable = json.dumps(_serialize_day_timetable(request.form, "day_timetable"))
@@ -1198,19 +1249,19 @@ def admin_user_profile(user_id):
                 c.execute(
                     """
                     UPDATE users
-                    SET email=?, email_lookup=?, name=?, pin=?, send_emails=?, timetable_a=?, timetable_b=?, day_timetable=?
+                    SET email=?, email_lookup=?, name=?, pin=?, send_emails=?, homework_in_email=?, timetable_a=?, timetable_b=?, day_timetable=?
                     WHERE id=?
                     """,
-                    (encrypt_email(email), _user_lookup(email), name, generate_password_hash(pin), send_emails, timetable_a, timetable_b, day_timetable, user_id),
+                    (encrypt_email(email), _user_lookup(email), name, generate_password_hash(pin), send_emails, homework_in_email, timetable_a, timetable_b, day_timetable, user_id),
                 )
             else:
                 c.execute(
                     """
                     UPDATE users
-                    SET email=?, email_lookup=?, name=?, send_emails=?, timetable_a=?, timetable_b=?, day_timetable=?
+                    SET email=?, email_lookup=?, name=?, send_emails=?, homework_in_email=?, timetable_a=?, timetable_b=?, day_timetable=?
                     WHERE id=?
                     """,
-                    (encrypt_email(email), _user_lookup(email), name, send_emails, timetable_a, timetable_b, day_timetable, user_id),
+                    (encrypt_email(email), _user_lookup(email), name, send_emails, homework_in_email, timetable_a, timetable_b, day_timetable, user_id),
                 )
 
             db.commit()
@@ -1220,6 +1271,10 @@ def admin_user_profile(user_id):
             return redirect(url_for("admin_user_profile", user_id=user_id))
 
         settings = _settings_defaults(_fetch_settings())
+        homework_db = get_db()
+        homework_items = fetch_homework_items(homework_db, user_id)
+        homework_sections = split_homework(homework_items)
+        homework_db.close()
         user["timetable_a"] = parse_timetable(user.get("timetable_a", ""))
         user["timetable_b"] = parse_timetable(user.get("timetable_b", ""))
         user["day_timetable"] = _parse_day_timetable(user.get("day_timetable", ""))
@@ -1230,10 +1285,13 @@ def admin_user_profile(user_id):
             timetable_b=user["timetable_b"],
             day_timetable=user["day_timetable"],
             send_emails=user.get("send_emails", 1),
+            homework_in_email=user.get("homework_in_email", 1),
             holiday_mode=settings["holiday_mode"],
             period_order=PERIOD_ORDER,
             day_timetable_fields=DAY_TIMETABLE_FIELDS,
             weekdays=WEEKDAYS,
+            homework_items=homework_items,
+            homework_sections=homework_sections,
         )
 
     except Exception as e:
@@ -1252,7 +1310,7 @@ def admin_send_email(user_id):
         c = db.cursor()
         
         # Get user record
-        c.execute("SELECT id, email, name, pin, send_emails, timetable_a, timetable_b, day_timetable, created_at FROM users WHERE id=?", (user_id,))
+        c.execute("SELECT id, email, name, pin, send_emails, timetable_a, timetable_b, homework_in_email, day_timetable, created_at FROM users WHERE id=?", (user_id,))
         result = c.fetchone()
         
         if not result:
