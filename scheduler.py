@@ -5,6 +5,8 @@ from datetime import datetime
 import pytz
 from db import get_db
 from emailer import send_email
+from email_security import decrypt_email, email_lookup_value
+from homework import fetch_homework_items, homework_email_summary
 from email_templates import (
     DAY_TIMETABLE_FIELDS,
     WEEKDAYS,
@@ -19,7 +21,10 @@ from config import TIMEZONE, SCHEDULER_ENABLED
 def _row_to_dict(row):
     if not row:
         return {}
-    return {key: row[key] for key in row.keys()}
+    data = {key: row[key] for key in row.keys()}
+    if "email" in data:
+        data["email"] = decrypt_email(data["email"])
+    return data
 
 
 def _settings_defaults(settings):
@@ -80,6 +85,14 @@ def _parse_menu_data(menu_text):
     }
 
 
+def _user_local_now(timezone_name):
+    try:
+        user_timezone = pytz.timezone(timezone_name or TIMEZONE)
+    except Exception:
+        user_timezone = pytz.timezone(TIMEZONE)
+    return datetime.now(user_timezone)
+
+
 def _build_email_context(user, settings):
     current_week = settings.get("ab_week", "A")
     timetable_raw = user.get("timetable_a", "") if current_week == "A" else user.get("timetable_b", "")
@@ -91,6 +104,13 @@ def _build_email_context(user, settings):
     menu_week = max(1, min(3, int(settings.get("menu_week", 1) or 1)))
     menu_text = settings.get(f"menu_week_{menu_week}", "")
     menu_data = _parse_menu_data(menu_text)
+    homework_items = []
+    homework_summary = {}
+    if user.get("id"):
+        db = get_db()
+        homework_items = fetch_homework_items(db, user.get("id"))
+        homework_summary = homework_email_summary(homework_items)
+        db.close()
     school_notice = settings.get("school_notice", "")
     display_name = user.get("name") or user.get("email", "").split("@")[0].replace(".", " ").title() or "Student"
 
@@ -115,6 +135,8 @@ def _build_email_context(user, settings):
             f"Email updates are {'enabled' if user.get('send_emails', 1) == 1 else 'disabled'} for this account.",
             "Open the dashboard to update your timetable or account details.",
         ],
+        "homework_items": homework_items,
+        "homework_summary": homework_summary,
         "school_notice": school_notice,
         "school_notice_lines": _notice_lines(school_notice),
         "period_order": ["1", "2", "3", "4", "5a", "5b / Lunch", "6", "7"],
@@ -128,7 +150,7 @@ def generate_email_html(user_email):
 
     db = get_db()
     c = db.cursor()
-    c.execute("SELECT id, email, name, pin, send_emails, timetable_a, timetable_b, day_timetable, created_at FROM users WHERE email=?", (user_email,))
+    c.execute("SELECT id, email, name, pin, send_emails, timetable_a, timetable_b, day_timetable, created_at FROM users WHERE email_lookup=?", (email_lookup_value(user_email),))
     user = _row_to_dict(c.fetchone())
     c.execute("SELECT id, holiday_mode, holiday_weeks, ab_week, menu_week, menu_week_1, menu_week_2, menu_week_3, school_notice FROM settings WHERE id=1")
     settings = _settings_defaults(_row_to_dict(c.fetchone()))
@@ -144,8 +166,8 @@ def send_emails_for_time(email_send_time):
     """Send emails to users configured for a specific send time."""
     
     try:
-        # Check if today is a weekend
-        today = datetime.now()
+        # Check if today is a weekend in the configured scheduler timezone
+        today = datetime.now(pytz.timezone(TIMEZONE))
         if today.weekday() >= 5:  # 5=Saturday, 6=Sunday
             print(f"[ℹ] Skipping email send - it's {today.strftime('%A')}")
             return
@@ -166,11 +188,11 @@ def send_emails_for_time(email_send_time):
         # Get all users with emails enabled and this specific send time
         c.execute(
             """
-            SELECT email, name, send_emails, timetable_a, timetable_b, day_timetable, timezone
+            SELECT email, name, send_emails, timetable_a, timetable_b, day_timetable, timezone, email_send_time
             FROM users
-            WHERE send_emails = 1 AND email_send_time = ?
+            WHERE send_emails = 1
             """,
-            (email_send_time,)
+            (),
         )
         users = c.fetchall()
         db.close()
@@ -184,6 +206,9 @@ def send_emails_for_time(email_send_time):
         for user in users:
             try:
                 user_dict = _row_to_dict(user)
+                user_local_now = _user_local_now(user_dict.get("timezone"))
+                if user_local_now.strftime("%H:%M") != email_send_time:
+                    continue
                 html = render_email_html(_build_email_context(user_dict, settings))
                 send_email(user_dict.get("email", ""), "Ashford School Daily Updates", html)
             except Exception as e:
@@ -217,7 +242,7 @@ def send_daily_emails():
             return
         
         # Get all users with send_emails enabled
-        c.execute("SELECT id, email, name, pin, send_emails, timetable_a, timetable_b, day_timetable, email_send_time FROM users WHERE send_emails = 1")
+        c.execute("SELECT id, email, name, pin, send_emails, timetable_a, timetable_b, day_timetable, email_send_time, timezone FROM users WHERE send_emails = 1")
         users = c.fetchall()
         c.execute("SELECT id, holiday_mode, holiday_weeks, ab_week, menu_week, menu_week_1, menu_week_2, menu_week_3, school_notice FROM settings WHERE id=1")
         settings = _settings_defaults(_row_to_dict(c.fetchone()))
@@ -227,26 +252,27 @@ def send_daily_emails():
             print("[ℹ] No users to send emails to")
             return
         
-        # Get current hour (without minutes) to match against user's email_send_time
-        current_hour_str = datetime.now().strftime("%H:00")
-        current_exact_time = datetime.now().strftime("%H:%M")
-        
-        # Send email to each user if their send time matches current hour
+        # Send email to each user if their local time matches their preferred send time
         success_count = 0
         for user in users:
             user_record = _row_to_dict(user)
             email_send_time = user_record.get("email_send_time", "08:00")
-            
-            # Check if the user's email time starts with the current hour (e.g., if they want 08:30 and it's 08:XX, send)
-            if email_send_time[:2] == current_exact_time[:2]:  # Compare hour part
-                html = render_email_html(_build_email_context(user_record, settings))
-                if send_email(user_record.get("email"), "AS Updates - Daily School Update", html):
-                    success_count += 1
+            user_local_now = _user_local_now(user_record.get("timezone"))
+
+            if user_local_now.weekday() >= 5:
+                continue
+
+            if user_local_now.strftime("%H:%M") != email_send_time:
+                continue
+
+            html = render_email_html(_build_email_context(user_record, settings))
+            if send_email(user_record.get("email"), "AS Updates - Daily School Update", html):
+                success_count += 1
         
         if success_count > 0:
-            print(f"[✓] Sent emails to {success_count}/{len(users)} users at {current_exact_time}")
+            print(f"[✓] Sent emails to {success_count}/{len(users)} users at the current minute")
         else:
-            print(f"[ℹ] No users scheduled for email at {current_exact_time}")
+            print(f"[ℹ] No users scheduled for email at the current minute")
         
     except Exception as e:
         print(f"[✗] Scheduler error: {e}")
@@ -262,12 +288,10 @@ def start_scheduler():
     try:
         scheduler = BackgroundScheduler()
         
-        # Add job: every weekday at every hour (to support per-user email times)
-        # Mon-Fri (0-4), every hour at minute 0
+        # Add job: every weekday every minute (to support per-user send times and timezones)
         trigger = CronTrigger(
             day_of_week="mon-fri",
-            hour="*",
-            minute=0,
+            minute="*",
             timezone=TIMEZONE
         )
         
@@ -280,7 +304,7 @@ def start_scheduler():
         )
         
         scheduler.start()
-        print(f"[✓] Scheduler started - emails sent hourly Mon-Fri at user-configured times ({TIMEZONE})")
+        print(f"[✓] Scheduler started - emails checked every minute Mon-Fri at user-configured times ({TIMEZONE})")
         return scheduler
         
     except Exception as e:

@@ -1,17 +1,91 @@
-<h1>Admin Dashboard</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - Ashford School Updates</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="feedback-banner">
+    <a href="https://hackanomous-rsvp.fillout.com/t/kYWQReDmZkus" target="_blank" class="feedback-btn">💬 Give feedback here</a>
+  </div>
 
-<h2>Users</h2>
+  <div class="topbar admin-topbar">
+    <div class="topbar-left">
+      <h2>🧭 Admin Dashboard</h2>
+    </div>
+    <div class="topbar-right">
+      <a href="/admin" class="btn btn-small btn-outline">Open Control Panel</a>
+      <a href="/logout" class="btn btn-small btn-outline">Logout</a>
+    </div>
+  </div>
 
-<ul>
-{% for user in users %}
-  <li>
-    {{ user[1] }}
-    <a href="/admin/delete/{{ user[0] }}">Delete</a>
-  </li>
-{% endfor %}
-</ul>
+  <div class="container admin-page">
+    <div class="card admin-card">
+      <div class="card-header">
+        <h3>📈 Snapshot</h3>
+      </div>
+      <div class="card-body">
+        <div class="status-grid">
+          <div class="status-item">
+            <span class="status-label">Users</span>
+            <span class="status-value">{{ users|length }}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Week Type</span>
+            <span class="status-value">{{ settings[1] }}</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Holiday Mode</span>
+            <span class="status-value">{{ settings[2] }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
 
-<h2>Settings</h2>
-<p>Week Type: {{ settings[1] }}</p>
-<p>Holiday Mode: {{ settings[2] }}</p>
-<p>Message: {{ settings[3] }}</p>
+    <div class="card">
+      <div class="card-header">
+        <h3>👥 Users</h3>
+      </div>
+      <div class="card-body">
+        {% if users %}
+          <div class="table-responsive">
+            <table class="users-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for user in users %}
+                  <tr>
+                    <td>{{ user[1] }}</td>
+                    <td><a class="btn btn-tiny btn-danger" href="/admin/delete/{{ user[0] }}">Delete</a></td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="empty-state">No users found.</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3>⚙️ Settings</h3>
+      </div>
+      <div class="card-body">
+        <div class="info-box">
+          <p><strong>Week Type:</strong> {{ settings[1] }}</p>
+          <p><strong>Holiday Mode:</strong> {{ settings[2] }}</p>
+          <p><strong>Message:</strong> {{ settings[3] }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -2,6 +2,25 @@
 
 ## ✅ All Changes Made (Current Session)
 
+### 5. Encrypted Emails, Dashboard Choice, and Homework Tracker
+
+- Added encrypted-at-rest email storage with normalized lookup keys for login and admin edits
+- Added automatic startup migration of plaintext emails to the encrypted format
+- Normal users now land on a dashboard chooser with old and new dashboard options
+- Added a new student dashboard route with a working homework tracker
+- Added homework add / toggle / delete actions and condensed homework data in the 8am email
+- Switched the scheduler to minute-level, timezone-aware send-time checks
+- Added `cryptography` to `requirements.txt`
+
+### 4. Email Encryption and Dashboard Choice
+
+- Added encrypted-at-rest email storage with a normalized lookup key for login and admin edits
+- Migrated existing plaintext emails automatically on startup via `db.py`
+- Normal users now land on a dashboard chooser with old and new dashboard options
+- Added a new student dashboard route at `/dashboard/new`
+- Switched the scheduler to minute-level, timezone-aware send-time checks
+- Added `cryptography` to `requirements.txt`
+
 ### 3. Timetable Reuse and Markdown Notices
 
 - Extracted the timetable editor into a shared include at `templates/partials/timetable_editor.html`

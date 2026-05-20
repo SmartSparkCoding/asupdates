@@ -16,6 +16,7 @@ ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 # Email settings (Gmail SMTP)
 GMAIL_USER = os.getenv("GMAIL_USER", "")
 GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "")
+EMAIL_ENCRYPTION_KEY = os.getenv("EMAIL_ENCRYPTION_KEY", "")
 
 # Scheduler settings
 SCHEDULER_ENABLED = os.getenv("SCHEDULER_ENABLED", "True") == "True"

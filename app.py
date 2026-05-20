@@ -23,6 +23,8 @@ from config import SECRET_KEY, ADMIN_PASSWORD, DEBUG, DATABASE
 from db import get_db, init_db, verify_schema
 from emailer import send_test_email, send_email
 from scheduler import start_scheduler, generate_email_html
+from email_security import decrypt_email, encrypt_email, email_lookup_value, normalize_email
+from homework import fetch_homework_items, homework_email_summary, split_homework
 from email_templates import (
     WEEKDAYS,
     PERIOD_ORDER,
@@ -96,7 +98,14 @@ def admin_required(f):
 def _row_to_dict(row):
     if not row:
         return {}
-    return {key: row[key] for key in row.keys()}
+    data = {key: row[key] for key in row.keys()}
+    if "email" in data:
+        data["email"] = decrypt_email(data["email"])
+    return data
+
+
+def _user_lookup(email):
+    return email_lookup_value(email)
 
 
 def _fetch_user(user_id):
@@ -241,6 +250,13 @@ def _build_user_email_context(user, settings, external_url_base=None):
     current_day = datetime.now().strftime("%A")
     current_day_schedule = {row["period"]: row for row in timetable_day_rows(timetable, current_day)} if current_day in WEEKDAYS else {}
     current_day_timetable = day_timetable.get(current_day, {}) if current_day in WEEKDAYS else {}
+    homework_items = []
+    homework_summary = {}
+    if user.get("id"):
+        db = get_db()
+        homework_items = fetch_homework_items(db, user.get("id"))
+        homework_summary = homework_email_summary(homework_items)
+        db.close()
     
     menu_week = max(1, min(3, int(settings.get("menu_week", 1) or 1)))
     menu_text = settings.get(f"menu_week_{menu_week}", "")
@@ -268,6 +284,8 @@ def _build_user_email_context(user, settings, external_url_base=None):
             f"Email updates are {'enabled' if user.get('send_emails', 1) == 1 else 'disabled'} for this account.",
             f"Use the dashboard to update your profile and timetable.",
         ],
+        "homework_items": homework_items,
+        "homework_summary": homework_summary,
         "school_notice": school_notice,
         "school_notice_lines": _notice_lines(school_notice),
         "period_order": PERIOD_ORDER,
@@ -344,7 +362,11 @@ def home():
     elif "is_admin" in session and session["is_admin"]:
         return redirect(url_for("admin_dashboard"))
     elif "user_id" in session:
-        return redirect(url_for("dashboard"))
+        if session.get("dashboard_mode") == "new":
+            return redirect(url_for("dashboard_new"))
+        if session.get("dashboard_mode") == "old":
+            return redirect(url_for("dashboard"))
+        return redirect(url_for("dashboard_choice"))
     else:
         return redirect(url_for("login"))
 
@@ -374,7 +396,7 @@ def signup():
         try:
             db = get_db()
             c = db.cursor()
-            c.execute("SELECT id FROM users WHERE email=?", (email,))
+            c.execute("SELECT id FROM users WHERE email_lookup=?", (_user_lookup(email),))
             
             if c.fetchone():
                 flash("Email already registered", "warning")
@@ -386,9 +408,9 @@ def signup():
             
             # Create user
             c.execute("""
-                INSERT INTO users (email, pin, send_emails)
-                VALUES (?, ?, 1)
-            """, (email, pin_hash))
+                INSERT INTO users (email, email_lookup, pin, send_emails)
+                VALUES (?, ?, ?, 1)
+            """, (encrypt_email(email), _user_lookup(email), pin_hash))
             
             db.commit()
             db.close()
@@ -432,7 +454,7 @@ def login():
         try:
             db = get_db()
             c = db.cursor()
-            c.execute("SELECT id, pin FROM users WHERE email=?", (email,))
+            c.execute("SELECT id, pin, email FROM users WHERE email_lookup=?", (_user_lookup(email),))
             user = c.fetchone()
             db.close()
             
@@ -442,20 +464,21 @@ def login():
             
             user_id = user[0]
             pin_hash = user[1]
+            resolved_email = decrypt_email(user[2]) or email
             
             # If user has PIN, redirect to PIN verification
             if pin_hash:
                 session["temp_user_id"] = user_id
-                session["temp_user_email"] = email
+                session["temp_user_email"] = resolved_email
                 return redirect(url_for("pin_verify"))
             
             # No PIN - log in directly
             session["user_id"] = user_id
-            session["user_email"] = email
+            session["user_email"] = resolved_email
             session["login_time"] = datetime.now().isoformat()
             
             # Check if this email is an admin email
-            is_admin_email = email.lower() in [admin_email.lower() for admin_email in ADMIN_EMAILS]
+            is_admin_email = resolved_email.lower() in [admin_email.lower() for admin_email in ADMIN_EMAILS]
             
             if is_admin_email:
                 # Admin user without PIN - show dashboard choice
@@ -466,7 +489,7 @@ def login():
                 # Normal user - go straight to dashboard
                 session["is_admin"] = False
                 flash("Logged in successfully", "success")
-                return redirect(url_for("dashboard"))
+                return redirect(url_for("dashboard_choice"))
             
         except Exception as e:
             print(f"[✗] Login error: {e}")
@@ -497,7 +520,7 @@ def pin_verify():
         try:
             db = get_db()
             c = db.cursor()
-            c.execute("SELECT pin FROM users WHERE id=?", (temp_user_id,))
+            c.execute("SELECT pin, email FROM users WHERE id=?", (temp_user_id,))
             user = c.fetchone()
             db.close()
             
@@ -512,11 +535,11 @@ def pin_verify():
             
             # PIN correct - log in
             session["user_id"] = temp_user_id
-            session["user_email"] = temp_user_email
+            session["user_email"] = decrypt_email(user[1]) or temp_user_email
             session["login_time"] = datetime.now().isoformat()
             
             # Check if this email is an admin email
-            is_admin_email = temp_user_email.lower() in [email.lower() for email in ADMIN_EMAILS]
+            is_admin_email = session["user_email"].lower() in [email.lower() for email in ADMIN_EMAILS]
             
             if is_admin_email:
                 # Admin user - show dashboard choice
@@ -531,7 +554,7 @@ def pin_verify():
                 session.pop("temp_user_id", None)
                 session.pop("temp_user_email", None)
                 flash("Logged in successfully", "success")
-                return redirect(url_for("dashboard"))
+                return redirect(url_for("dashboard_choice"))
             
         except Exception as e:
             print(f"[✗] PIN verification error: {e}")
@@ -543,12 +566,16 @@ def pin_verify():
 
 @app.route("/dashboard/choice")
 def dashboard_choice():
-    """Dashboard choice page for admin users."""
-    if "user_id" not in session or not session.get("is_admin_email"):
+    """Dashboard choice page for all signed-in users."""
+    if "user_id" not in session:
         flash("Invalid request", "danger")
         return redirect(url_for("login"))
     
-    return render_template("dashboard_choice.html", email=session.get("user_email"))
+    return render_template(
+        "dashboard_choice.html",
+        email=session.get("user_email"),
+        can_access_admin=bool(session.get("is_admin_email")),
+    )
 
 
 @app.route("/dashboard/choice/admin", methods=["POST"])
@@ -559,6 +586,7 @@ def dashboard_choice_admin():
         return redirect(url_for("login"))
     
     session["is_admin"] = True
+    session["dashboard_mode"] = "admin"
     session.pop("is_admin_email", None)
     flash("Switched to Admin Dashboard", "success")
     return redirect(url_for("admin_dashboard"))
@@ -573,8 +601,26 @@ def dashboard_choice_normal():
     
     session["is_admin"] = False
     session.pop("is_admin_email", None)
+    session["dashboard_mode"] = "old"
     flash("Switched to User Dashboard", "success")
     return redirect(url_for("dashboard"))
+
+
+@app.route("/dashboard/choice/old", methods=["POST"])
+def dashboard_choice_old():
+    return dashboard_choice_normal()
+
+
+@app.route("/dashboard/choice/new", methods=["POST"])
+@login_required
+def dashboard_choice_new():
+    """Redirect a normal user to the new dashboard."""
+
+    session["is_admin"] = False
+    session.pop("is_admin_email", None)
+    session["dashboard_mode"] = "new"
+    flash("Switched to New Dashboard", "success")
+    return redirect(url_for("dashboard_new"))
 
 
 @app.route("/logout")
@@ -615,7 +661,6 @@ def dashboard():
             holiday_mode=settings["holiday_mode"],
             holiday_weeks=settings["holiday_weeks"],
             ab_week=settings["ab_week"],
-            menu_week=settings["menu_week"],
             menu_week_1=settings["menu_week_1"],
             menu_week_2=settings["menu_week_2"],
             menu_week_3=settings["menu_week_3"],
@@ -640,6 +685,150 @@ def dashboard():
         return redirect(url_for("login"))
 
 
+@app.route("/dashboard/new")
+@login_required
+def dashboard_new():
+    """New student dashboard."""
+
+    try:
+        user = _fetch_user(session["user_id"])
+        settings = _settings_defaults(_fetch_settings())
+        schedule_a = parse_timetable(user.get("timetable_a", ""))
+        schedule_b = parse_timetable(user.get("timetable_b", ""))
+        day_timetable = _parse_day_timetable(user.get("day_timetable", ""))
+        current_week = settings["ab_week"]
+        current_day = datetime.now().strftime("%A")
+        current_schedule_source = schedule_a if current_week == "A" else schedule_b
+        current_day_periods = {row["period"]: row for row in timetable_day_rows(current_schedule_source, current_day)} if current_day in WEEKDAYS else {}
+
+        next_lesson = next((row for row in timetable_day_rows(current_schedule_source, current_day) if row.get("subject") or row.get("room")), None)
+        menu_week = max(1, min(3, int(settings.get("menu_week", 1) or 1)))
+        lunch_data = _parse_menu_data(settings.get(f"menu_week_{menu_week}", ""))
+        homework_db = get_db()
+        homework_items = fetch_homework_items(homework_db, user.get("id"))
+        homework_sections = split_homework(homework_items)
+        homework_db.close()
+
+        return render_template(
+            "dashboard_new.html",
+            user=user,
+            email=user.get("email", session.get("user_email")),
+            name=user.get("name", ""),
+            send_emails=user.get("send_emails", 1),
+            email_send_time=user.get("email_send_time", "08:00"),
+            holiday_mode=settings["holiday_mode"],
+            holiday_weeks=settings["holiday_weeks"],
+            ab_week=settings["ab_week"],
+            menu_week_1=settings["menu_week_1"],
+            menu_week_2=settings["menu_week_2"],
+            menu_week_3=settings["menu_week_3"],
+            timetable_a=schedule_a,
+            timetable_b=schedule_b,
+            day_timetable=day_timetable,
+            current_week=current_week,
+            current_day=current_day,
+            current_schedule=current_day_periods,
+            current_week_schedule=timetable_day_rows(current_schedule_source, current_day) if current_day in WEEKDAYS else [],
+            next_lesson=next_lesson,
+            lunch=lunch_data,
+            menu_week=menu_week,
+            homework_items=homework_items,
+            homework_sections=homework_sections,
+            weekdays=WEEKDAYS,
+            day_timetable_fields=DAY_TIMETABLE_FIELDS,
+            schedule_fields=SCHEDULE_FIELDS,
+            current_week_key=current_week,
+            period_order=PERIOD_ORDER,
+            period_times=PERIOD_TIMES,
+        )
+
+    except Exception as e:
+        print(f"[✗] New dashboard error: {e}")
+        flash("Error loading new dashboard", "danger")
+        return redirect(url_for("dashboard"))
+
+
+@app.route("/homework/add", methods=["POST"])
+@login_required
+def homework_add():
+    """Add a homework item for the current user."""
+
+    subject = request.form.get("subject", "").strip()
+    title = request.form.get("title", "").strip()
+    details = request.form.get("details", "").strip()
+    due_date = request.form.get("due_date", "").strip()
+    due_time = request.form.get("due_time", "23:59").strip() or "23:59"
+
+    if not subject or not title or not due_date:
+        flash("Subject, title, and due date are required", "warning")
+        return redirect(url_for("dashboard_new"))
+
+    try:
+        db = get_db()
+        c = db.cursor()
+        c.execute(
+            """
+            INSERT INTO homework_items (user_id, subject, title, details, due_date, due_time, completed)
+            VALUES (?, ?, ?, ?, ?, ?, 0)
+            """,
+            (session["user_id"], subject, title, details, due_date, due_time),
+        )
+        db.commit()
+        db.close()
+        flash("Homework added", "success")
+    except Exception as e:
+        print(f"[✗] Homework add error: {e}")
+        flash("Error adding homework", "danger")
+
+    return redirect(url_for("dashboard_new"))
+
+
+@app.route("/homework/toggle/<int:item_id>", methods=["POST"])
+@login_required
+def homework_toggle(item_id):
+    """Toggle a homework item's completion state."""
+
+    try:
+        db = get_db()
+        c = db.cursor()
+        c.execute("SELECT completed FROM homework_items WHERE id=? AND user_id=?", (item_id, session["user_id"]))
+        row = c.fetchone()
+        if not row:
+            db.close()
+            flash("Homework item not found", "warning")
+            return redirect(url_for("dashboard_new"))
+
+        new_value = 0 if row[0] else 1
+        c.execute("UPDATE homework_items SET completed=? WHERE id=? AND user_id=?", (new_value, item_id, session["user_id"]))
+        db.commit()
+        db.close()
+        flash("Homework updated", "success")
+    except Exception as e:
+        print(f"[✗] Homework toggle error: {e}")
+        flash("Error updating homework", "danger")
+
+    return redirect(url_for("dashboard_new"))
+
+
+@app.route("/homework/delete/<int:item_id>", methods=["POST"])
+@login_required
+def homework_delete(item_id):
+    """Delete a homework item."""
+
+    try:
+        db = get_db()
+        c = db.cursor()
+        c.execute("DELETE FROM homework_items WHERE id=? AND user_id=?", (item_id, session["user_id"]))
+        db.commit()
+        db.close()
+        flash("Homework deleted", "success")
+    except Exception as e:
+        print(f"[✗] Homework delete error: {e}")
+        flash("Error deleting homework", "danger")
+
+    return redirect(url_for("dashboard_new"))
+
+
 @app.route("/dashboard/update-account", methods=["POST"])
 @login_required
 def dashboard_update_account():
@@ -657,7 +846,7 @@ def dashboard_update_account():
         db = get_db()
         c = db.cursor()
 
-        c.execute("SELECT id FROM users WHERE email=? AND id != ?", (email, session["user_id"]))
+        c.execute("SELECT id FROM users WHERE email_lookup=? AND id != ?", (_user_lookup(email), session["user_id"]))
         if c.fetchone():
             db.close()
             flash("That email is already in use", "warning")
@@ -668,25 +857,25 @@ def dashboard_update_account():
             c.execute(
                 """
                 UPDATE users
-                SET email=?, name=?, pin=?
+                SET email=?, email_lookup=?, name=?, pin=?
                 WHERE id=?
                 """,
-                (email, name, pin_hash, session["user_id"]),
+                (encrypt_email(email), _user_lookup(email), name, pin_hash, session["user_id"]),
             )
         else:
             c.execute(
                 """
                 UPDATE users
-                SET email=?, name=?
+                SET email=?, email_lookup=?, name=?
                 WHERE id=?
                 """,
-                (email, name, session["user_id"]),
+                (encrypt_email(email), _user_lookup(email), name, session["user_id"]),
             )
 
         db.commit()
         db.close()
 
-        session["user_email"] = email
+        session["user_email"] = normalize_email(email)
         flash("Account updated", "success")
     except Exception as e:
         print(f"[✗] Update account error: {e}")
@@ -839,13 +1028,7 @@ def admin_dashboard():
         users_list = []
         if users:
             for u in users:
-                users_list.append({
-                    'id': u[0],
-                    'email': u[1],
-                   'name': u[2],
-                   'send_emails': u[3],
-                   'created_at': u[4]
-                })
+                users_list.append(_row_to_dict(u))
         
         return render_template(
             "admin.html",
@@ -888,17 +1071,18 @@ def admin_add_user():
         db = get_db()
         c = db.cursor()
         
-        c.execute("SELECT id FROM users WHERE email=?", (email,))
+        c.execute("SELECT id FROM users WHERE email_lookup=?", (_user_lookup(email),))
         if c.fetchone():
             flash("Email already exists", "warning")
             db.close()
             return redirect(url_for("admin_dashboard"))
         
         c.execute("""
-            INSERT INTO users (email, name, pin, send_emails, timetable_a, timetable_b)
-            VALUES (?, ?, ?, 1, ?, ?)
+            INSERT INTO users (email, email_lookup, name, pin, send_emails, timetable_a, timetable_b)
+            VALUES (?, ?, ?, ?, 1, ?, ?)
         """, (
-            email,
+            encrypt_email(email),
+            _user_lookup(email),
             name,
             generate_password_hash(pin) if pin else None,
             json.dumps(default_timetable()),
@@ -1004,7 +1188,7 @@ def admin_user_profile(user_id):
             db = get_db()
             c = db.cursor()
 
-            c.execute("SELECT id FROM users WHERE email=? AND id != ?", (email, user_id))
+            c.execute("SELECT id FROM users WHERE email_lookup=? AND id != ?", (_user_lookup(email), user_id))
             if c.fetchone():
                 db.close()
                 flash("That email is already in use", "warning")
@@ -1014,19 +1198,19 @@ def admin_user_profile(user_id):
                 c.execute(
                     """
                     UPDATE users
-                    SET email=?, name=?, pin=?, send_emails=?, timetable_a=?, timetable_b=?, day_timetable=?
+                    SET email=?, email_lookup=?, name=?, pin=?, send_emails=?, timetable_a=?, timetable_b=?, day_timetable=?
                     WHERE id=?
                     """,
-                    (email, name, generate_password_hash(pin), send_emails, timetable_a, timetable_b, day_timetable, user_id),
+                    (encrypt_email(email), _user_lookup(email), name, generate_password_hash(pin), send_emails, timetable_a, timetable_b, day_timetable, user_id),
                 )
             else:
                 c.execute(
                     """
                     UPDATE users
-                    SET email=?, name=?, send_emails=?, timetable_a=?, timetable_b=?, day_timetable=?
+                    SET email=?, email_lookup=?, name=?, send_emails=?, timetable_a=?, timetable_b=?, day_timetable=?
                     WHERE id=?
                     """,
-                    (email, name, send_emails, timetable_a, timetable_b, day_timetable, user_id),
+                    (encrypt_email(email), _user_lookup(email), name, send_emails, timetable_a, timetable_b, day_timetable, user_id),
                 )
 
             db.commit()

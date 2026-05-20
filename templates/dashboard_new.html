@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - Ashford School Updates</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .student-hero {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .hero-card {
+            padding: 20px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(20, 184, 166, 0.14), rgba(15, 118, 110, 0.08));
+            border: 1px solid rgba(20, 184, 166, 0.18);
+        }
+
+        .hero-label {
+            font-size: 0.82rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--gray);
+            margin-bottom: 8px;
+        }
+
+        .hero-value {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--navy-dark);
+        }
+
+        .lesson-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .lesson-table th,
+        .lesson-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(229, 231, 235, 0.8);
+            text-align: left;
+        }
+
+        .lesson-table th {
+            font-size: 0.85rem;
+            color: var(--navy);
+        }
+
+        .settings-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .menu-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: rgba(20, 184, 166, 0.12);
+            color: var(--navy-dark);
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .empty-homework {
+            padding: 18px;
+            border-radius: 12px;
+            background: rgba(15, 118, 110, 0.06);
+            border: 1px dashed rgba(20, 184, 166, 0.35);
+        }
+    </style>
+</head>
+<body>
+    <div class="feedback-banner">
+        <a href="https://hackanomous-rsvp.fillout.com/t/kYWQReDmZkus" target="_blank" class="feedback-btn">💬 Give feedback here</a>
+    </div>
+
+    <div class="topbar">
+        <div class="topbar-left">
+            <h2>🎓 Student Dashboard</h2>
+        </div>
+        <div class="topbar-right">
+            <a href="/dashboard" class="btn btn-small btn-outline settings-link" title="Open settings">⚙ Settings</a>
+            <button id="theme-toggle" class="btn btn-small btn-outline" title="Toggle dark mode">🌙 Dark Mode</button>
+            <a href="/logout" class="btn btn-small btn-outline">Logout</a>
+        </div>
+    </div>
+
+    {% if get_flashed_messages() %}
+        {% for category, message in get_flashed_messages(with_categories=true) %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="container">
+        <div class="student-hero">
+            <div class="hero-card">
+                <div class="hero-label">Today</div>
+                <div class="hero-value">{{ current_day }}</div>
+                <div class="help-text">Week {{ current_week }} timetable</div>
+            </div>
+            <div class="hero-card">
+                <div class="hero-label">Next Lesson</div>
+                <div class="hero-value">
+                    {% if next_lesson and next_lesson.subject %}
+                        {{ next_lesson.subject }}
+                    {% else %}
+                        No lesson found
+                    {% endif %}
+                </div>
+                <div class="help-text">
+                    {% if next_lesson and next_lesson.room %}
+                        Room {{ next_lesson.room }}
+                    {% else %}
+                        Check your timetable in settings
+                    {% endif %}
+                </div>
+            </div>
+            <div class="hero-card">
+                <div class="hero-label">Email Time</div>
+                <div class="hero-value">{{ email_send_time or '08:00' }}</div>
+                <div class="help-text">Emails respect your local timezone setting</div>
+            </div>
+            <div class="hero-card">
+                <div class="hero-label">Lunch Menu</div>
+                <div class="hero-value">Week {{ menu_week }}</div>
+                <div class="help-text">Today's menu appears below</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>📚 Today's Lessons</h3>
+            </div>
+            <div class="card-body">
+                {% if current_week_schedule %}
+                    <table class="lesson-table">
+                        <thead>
+                            <tr>
+                                <th>Period</th>
+                                <th>Time</th>
+                                <th>Subject</th>
+                                <th>Room</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in current_week_schedule %}
+                                <tr>
+                                    <td>{{ row.period }}</td>
+                                    <td>{{ row.time }}</td>
+                                    <td>{{ row.subject or '—' }}</td>
+                                    <td>{{ row.room or '—' }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p class="card-description">No timetable available for today.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>🍽️ Lunch Menu</h3>
+            </div>
+            <div class="card-body">
+                <div class="menu-pill">Week {{ menu_week }}</div>
+                <p class="card-description">Your school menu for today is shown here.</p>
+                <div class="info-box">
+                    <strong>Main:</strong> {{ lunch.main or '—' }}<br>
+                    <strong>Sides:</strong> {{ lunch.sides or '—' }}<br>
+                    <strong>Pasta bar:</strong> {{ lunch.pasta_bar or '—' }}<br>
+                    <strong>Street food:</strong> {{ lunch.street_food or '—' }}<br>
+                    <strong>Potatoes:</strong> {{ lunch.potatoes or '—' }}<br>
+                    <strong>Soup:</strong> {{ lunch.soup or '—' }}<br>
+                    <strong>Vegetarian:</strong> {{ lunch.vegetarian or '—' }}<br>
+                    <strong>Dessert:</strong> {{ lunch.dessert or '—' }}
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3>📝 Homework Tracker</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="/homework/add" class="form-group" style="margin-bottom: 20px;">
+                    <div class="account-grid">
+                        <div class="form-item">
+                            <label for="homework-subject">Subject</label>
+                            <input type="text" id="homework-subject" name="subject" placeholder="e.g. Maths" required>
+                        </div>
+                        <div class="form-item">
+                            <label for="homework-title">Homework</label>
+                            <input type="text" id="homework-title" name="title" placeholder="Task title" required>
+                        </div>
+                        <div class="form-item">
+                            <label for="homework-due-date">Due Date</label>
+                            <input type="date" id="homework-due-date" name="due_date" required>
+                        </div>
+                        <div class="form-item">
+                            <label for="homework-due-time">Due Time</label>
+                            <input type="time" id="homework-due-time" name="due_time" value="23:59">
+                        </div>
+                    </div>
+                    <div class="form-item">
+                        <label for="homework-details">Details</label>
+                        <textarea id="homework-details" name="details" class="menu-textarea" placeholder="What needs doing?"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Homework</button>
+                </form>
+
+                {% if homework_sections.pending_count %}
+                    {% if homework_sections.overdue %}
+                        <div class="info-box" style="margin-bottom: 16px;">
+                            <h4>Overdue</h4>
+                            <ul>
+                                {% for item in homework_sections.overdue %}
+                                    <li>
+                                        <strong>{{ item.subject }}</strong> - {{ item.title }} ({{ item.due_date }} {{ item.due_time }})
+                                        <form method="POST" action="/homework/toggle/{{ item.id }}" style="display:inline; margin-left: 8px;">
+                                            <button type="submit" class="btn btn-small btn-success">Mark Done</button>
+                                        </form>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
+                    {% if homework_sections.due_today %}
+                        <div class="info-box" style="margin-bottom: 16px;">
+                            <h4>Due Today</h4>
+                            <ul>
+                                {% for item in homework_sections.due_today %}
+                                    <li>
+                                        <strong>{{ item.subject }}</strong> - {{ item.title }} ({{ item.due_time }})
+                                        <form method="POST" action="/homework/toggle/{{ item.id }}" style="display:inline; margin-left: 8px;">
+                                            <button type="submit" class="btn btn-small btn-success">{% if item.completed %}Undo{% else %}Done{% endif %}</button>
+                                        </form>
+                                        <form method="POST" action="/homework/delete/{{ item.id }}" style="display:inline; margin-left: 6px;">
+                                            <button type="submit" class="btn btn-small btn-outline">Delete</button>
+                                        </form>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+
+                    {% if homework_sections.due_tomorrow %}
+                        <div class="info-box">
+                            <h4>Due Tomorrow</h4>
+                            <ul>
+                                {% for item in homework_sections.due_tomorrow %}
+                                    <li><strong>{{ item.subject }}</strong> - {{ item.title }} ({{ item.due_time }})</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="empty-homework">
+                        <strong>No homework yet.</strong>
+                        <p class="help-text" style="margin-top: 8px;">Add your first homework item above.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <footer class="page-footer">
+        <p>AS Updates &copy; <span id="year"></span> • Felix & Jacob • <a href="/api/status">System Status</a></p>
+    </footer>
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+        const themeToggle = document.getElementById('theme-toggle');
+        const html = document.documentElement;
+        const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        if (savedTheme === 'dark') html.setAttribute('data-theme', 'dark');
+        themeToggle.addEventListener('click', () => {
+            const current = html.getAttribute('data-theme');
+            const newTheme = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            themeToggle.textContent = newTheme === 'dark' ? '🌟 Light Mode' : '🌙 Dark Mode';
+        });
+        if (savedTheme === 'dark') themeToggle.textContent = '🌟 Light Mode';
+    </script>
+</body>
+</html>

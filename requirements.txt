@@ -6,3 +6,4 @@ Werkzeug==3.0.0
 pytz==2024.1
 bleach==6.1.0
 Markdown==3.6
+cryptography==42.0.8

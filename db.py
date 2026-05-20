@@ -3,6 +3,7 @@ import os
 import sqlite3
 
 from config import DATABASE
+from email_security import migrate_user_emails
 
 
 TIMETABLE_PERIODS = [str(period) for period in range(1, 8)]
@@ -63,6 +64,7 @@ def init_db():
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 email TEXT UNIQUE NOT NULL,
+                email_lookup TEXT UNIQUE DEFAULT '',
                 name TEXT DEFAULT '',
                 pin TEXT,
                 send_emails INTEGER DEFAULT 1,
@@ -101,9 +103,28 @@ def init_db():
             """
         )
 
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS homework_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                subject TEXT NOT NULL,
+                title TEXT NOT NULL,
+                details TEXT DEFAULT '',
+                due_date TEXT NOT NULL,
+                due_time TEXT DEFAULT '23:59',
+                completed INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+            """
+        )
+
         c.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)")
+        c.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_lookup ON users(email_lookup)")
 
         _ensure_settings_row(conn)
+        migrate_user_emails(conn)
         
         conn.commit()
         print("[✓] Database initialized successfully")
@@ -127,6 +148,7 @@ def verify_schema():
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 email TEXT UNIQUE NOT NULL,
+                email_lookup TEXT UNIQUE DEFAULT '',
                 name TEXT DEFAULT '',
                 pin TEXT,
                 send_emails INTEGER DEFAULT 1,
@@ -154,6 +176,7 @@ def verify_schema():
         )
 
         _ensure_column(conn, "users", "name", "TEXT DEFAULT ''")
+        _ensure_column(conn, "users", "email_lookup", "TEXT DEFAULT ''")
         _ensure_column(conn, "users", "timetable_a", "TEXT DEFAULT ''")
         _ensure_column(conn, "users", "timetable_b", "TEXT DEFAULT ''")
         _ensure_column(conn, "users", "day_timetable", "TEXT DEFAULT ''")
@@ -175,8 +198,27 @@ def verify_schema():
             """
         )
 
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS homework_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                subject TEXT NOT NULL,
+                title TEXT NOT NULL,
+                details TEXT DEFAULT '',
+                due_date TEXT NOT NULL,
+                due_time TEXT DEFAULT '23:59',
+                completed INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+            """
+        )
+
         _ensure_settings_row(conn)
         _ensure_user_defaults(conn)
+        migrate_user_emails(conn)
+        c.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_lookup ON users(email_lookup)")
 
         conn.commit()
 

@@ -27,25 +27,35 @@
 
             <div class="choice-info">
                 <p>👤 <strong>{{ email }}</strong></p>
-                <p style="color: #666; margin-top: 8px;">You have access to both dashboards.</p>
+                <p>Choose the experience you want to use today.</p>
             </div>
 
             <div class="choice-buttons">
-                <form method="POST" action="/dashboard/choice/admin" style="flex: 1;">
-                    <button type="submit" class="btn btn-admin btn-large choice-button">
-                        <span style="font-size: 1.5rem; margin-bottom: 6px;">🔧</span>
-                        Admin Dashboard
-                        <span style="font-size: 0.85rem; display: block; margin-top: 4px; opacity: 0.9;">Manage users, notices, schedule</span>
-                    </button>
-                </form>
+                    {% if can_access_admin %}
+                        <form method="POST" action="/dashboard/choice/admin">
+                            <button type="submit" class="btn btn-admin btn-large choice-button">
+                                <span style="font-size: 1.5rem; margin-bottom: 6px;">🔧</span>
+                                Admin Dashboard
+                                <span style="font-size: 0.85rem; display: block; margin-top: 4px; opacity: 0.9;">Manage users, notices, schedule</span>
+                            </button>
+                        </form>
+                    {% endif %}
 
-                <form method="POST" action="/dashboard/choice/normal" style="flex: 1;">
-                    <button type="submit" class="btn btn-primary btn-large choice-button">
-                        <span style="font-size: 1.5rem; margin-bottom: 6px;">📊</span>
-                        User Dashboard
-                        <span style="font-size: 0.85rem; display: block; margin-top: 4px; opacity: 0.9;">View schedule, timetable, settings</span>
-                    </button>
-                </form>
+                    <form method="POST" action="/dashboard/choice/old">
+                        <button type="submit" class="btn btn-primary btn-large choice-button">
+                            <span style="font-size: 1.5rem; margin-bottom: 6px;">📚</span>
+                            Old Dashboard
+                            <span style="font-size: 0.85rem; display: block; margin-top: 4px; opacity: 0.9;">Keep the current layout and tools</span>
+                        </button>
+                    </form>
+
+                    <form method="POST" action="/dashboard/choice/new">
+                        <button type="submit" class="btn btn-primary btn-large choice-button">
+                            <span style="font-size: 1.5rem; margin-bottom: 6px;">✨</span>
+                            New Dashboard
+                            <span style="font-size: 0.85rem; display: block; margin-top: 4px; opacity: 0.9;">Student control centre view</span>
+                        </button>
+                    </form>
             </div>
 
             <p class="form-footer">
@@ -53,46 +63,5 @@
             </p>
         </div>
     </div>
-
-    <style>
-        .choice-card {
-            max-width: 600px;
-        }
-
-        .choice-info {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 25px;
-            border-left: 4px solid #14b8a6;
-        }
-
-        .choice-info p {
-            margin: 0;
-        }
-
-        .choice-buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .choice-button {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px 15px !important;
-            height: 100%;
-            min-height: 140px;
-        }
-
-        @media (max-width: 600px) {
-            .choice-buttons {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
 </body>
 </html>

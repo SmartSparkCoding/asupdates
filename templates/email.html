@@ -224,6 +224,41 @@
                 </div>
                 {% endif %}
 
+                <!-- HOMEWORK SECTION -->
+                {% if homework_summary and (homework_summary.due_today or homework_summary.due_tomorrow or homework_summary.overdue) %}
+                <div class="section">
+                    <div class="section-title">
+                        <span class="emoji">📝</span> Homework
+                    </div>
+                    <div class="section-content">
+                        {% if homework_summary.overdue %}
+                            <strong>Overdue</strong>
+                            <ul>
+                                {% for item in homework_summary.overdue %}
+                                <li><strong>{{ item.subject }}</strong> - {{ item.title }} ({{ item.due_date }} {{ item.due_time }})</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                        {% if homework_summary.due_today %}
+                            <strong>Due today</strong>
+                            <ul>
+                                {% for item in homework_summary.due_today %}
+                                <li><strong>{{ item.subject }}</strong> - {{ item.title }} ({{ item.due_time }})</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                        {% if homework_summary.due_tomorrow %}
+                            <strong>Due tomorrow</strong>
+                            <ul>
+                                {% for item in homework_summary.due_tomorrow %}
+                                <li><strong>{{ item.subject }}</strong> - {{ item.title }} ({{ item.due_time }})</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+
                 <!-- UPDATES SECTION -->
                 {% if updates %}
                 <div class="section">
