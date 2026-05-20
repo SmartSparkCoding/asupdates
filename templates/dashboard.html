@@ -32,6 +32,7 @@
             <h2>📊 Dashboard</h2>
         </div>
         <div class="topbar-right">
+            <button id="theme-toggle" class="btn btn-small btn-outline" title="Toggle dark mode">🌙 Dark Mode</button>
             <a href="/logout" class="btn btn-small btn-outline">Logout</a>
         </div>
     </div>
@@ -98,7 +99,7 @@
             </div>
             <div class="card-body">
                 <p class="card-description">
-                    Receive daily school updates with your timetable, events, and lunch menu every weekday at 08:00.
+                    Receive daily school updates with your timetable, events, and lunch menu every weekday at {{ email_send_time or '08:00' }}.
                 </p>
                 
                 <form method="POST" action="/toggle-emails" class="form-group">
@@ -109,10 +110,21 @@
                     {% endif %}
                 </form>
 
+                <div class="form-item" style="margin-top: 16px;">
+                    <form method="POST" action="/dashboard/update-email-time" class="form-group">
+                        <label for="email_send_time">📅 Email Send Time (UK timezone)</label>
+                        <div style="display: flex; gap: 10px; align-items: flex-end;">
+                            <input type="time" id="email_send_time" name="email_send_time" value="{{ email_send_time or '08:00' }}" style="flex: 1;">
+                            <button type="submit" class="btn btn-primary">Save Time</button>
+                        </div>
+                        <p class="help-text">Choose what time you'd like to receive your daily email (Monday-Friday)</p>
+                    </form>
+                </div>
+
                 <div class="info-box">
                     <h4>📅 Schedule</h4>
                     <ul>
-                        <li>Sent: Monday to Friday at 08:00 AM (UK time)</li>
+                        <li>Sent: Monday to Friday at {{ email_send_time or '08:00' }} AM (UK time)</li>
                         <li>Includes: Timetable, Events, Lunch Menu</li>
                         <li>Holiday mode: Email paused during school holidays</li>
                     </ul>
@@ -167,7 +179,20 @@
     </div>
 
     <footer class="page-footer">
-        <p>AS Updates &copy; 2024 • <a href="/api/status">System Status</a></p>
+        <p>AS Updates &copy; <span id="year"></span> • Felix & Jacob • <a href="/api/status">System Status</a></p>
     </footer>
-</body>
-</html>
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+        const themeToggle = document.getElementById('theme-toggle');
+        const html = document.documentElement;
+        const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        if (savedTheme === 'dark') html.setAttribute('data-theme', 'dark');
+        themeToggle.addEventListener('click', () => {
+            const current = html.getAttribute('data-theme');
+            const newTheme = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            themeToggle.textContent = newTheme === 'dark' ? '🌟 Light Mode' : '🌙 Dark Mode';
+        });
+        if (savedTheme === 'dark') themeToggle.textContent = '🌟 Light Mode';
+    </script>

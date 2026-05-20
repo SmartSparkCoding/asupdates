@@ -140,8 +140,61 @@ def generate_email_html(user_email):
     return render_email_html(_build_email_context(user, settings))
 
 
+def send_emails_for_time(email_send_time):
+    """Send emails to users configured for a specific send time."""
+    
+    try:
+        # Check if today is a weekend
+        today = datetime.now()
+        if today.weekday() >= 5:  # 5=Saturday, 6=Sunday
+            print(f"[ℹ] Skipping email send - it's {today.strftime('%A')}")
+            return
+
+        # Get all settings
+        db = get_db()
+        c = db.cursor()
+        c.execute("SELECT id, holiday_mode, holiday_weeks, ab_week, menu_week, menu_week_1, menu_week_2, menu_week_3, school_notice FROM settings WHERE id=1")
+        settings_row = c.fetchone()
+        settings = _settings_defaults(_row_to_dict(settings_row))
+
+        # Check if it's a holiday
+        if settings.get("holiday_mode") == 1:
+            print(f"[ℹ] Holiday mode enabled - no emails sent")
+            db.close()
+            return
+
+        # Get all users with emails enabled and this specific send time
+        c.execute(
+            """
+            SELECT email, name, send_emails, timetable_a, timetable_b, day_timetable, timezone
+            FROM users
+            WHERE send_emails = 1 AND email_send_time = ?
+            """,
+            (email_send_time,)
+        )
+        users = c.fetchall()
+        db.close()
+
+        if not users:
+            print(f"[ℹ] No users configured for email time {email_send_time}")
+            return
+
+        print(f"[✓] Sending emails to {len(users)} user(s) at {email_send_time}")
+        
+        for user in users:
+            try:
+                user_dict = _row_to_dict(user)
+                html = render_email_html(_build_email_context(user_dict, settings))
+                send_email(user_dict.get("email", ""), "Ashford School Daily Updates", html)
+            except Exception as e:
+                print(f"[✗] Error sending email to {user.get('email', 'unknown')}: {e}")
+
+    except Exception as e:
+        print(f"[✗] Error in send_emails_for_time({email_send_time}): {e}")
+
+
 def send_daily_emails():
-    """Send emails to all active users (weekdays only, not during holidays)."""
+    """Send emails to users at their configured times (weekdays only, not during holidays)."""
     
     try:
         # Check if today is a weekend
@@ -164,7 +217,7 @@ def send_daily_emails():
             return
         
         # Get all users with send_emails enabled
-        c.execute("SELECT id, email, name, pin, send_emails, timetable_a, timetable_b, day_timetable, created_at FROM users WHERE send_emails = 1")
+        c.execute("SELECT id, email, name, pin, send_emails, timetable_a, timetable_b, day_timetable, email_send_time FROM users WHERE send_emails = 1")
         users = c.fetchall()
         c.execute("SELECT id, holiday_mode, holiday_weeks, ab_week, menu_week, menu_week_1, menu_week_2, menu_week_3, school_notice FROM settings WHERE id=1")
         settings = _settings_defaults(_row_to_dict(c.fetchone()))
@@ -174,17 +227,26 @@ def send_daily_emails():
             print("[ℹ] No users to send emails to")
             return
         
-        # Send email to each user
+        # Get current hour (without minutes) to match against user's email_send_time
+        current_hour_str = datetime.now().strftime("%H:00")
+        current_exact_time = datetime.now().strftime("%H:%M")
+        
+        # Send email to each user if their send time matches current hour
         success_count = 0
         for user in users:
             user_record = _row_to_dict(user)
-            email = user_record.get("email")
-            html = render_email_html(_build_email_context(user_record, settings))
+            email_send_time = user_record.get("email_send_time", "08:00")
             
-            if send_email(email, "AS Updates - Daily School Update", html):
-                success_count += 1
+            # Check if the user's email time starts with the current hour (e.g., if they want 08:30 and it's 08:XX, send)
+            if email_send_time[:2] == current_exact_time[:2]:  # Compare hour part
+                html = render_email_html(_build_email_context(user_record, settings))
+                if send_email(user_record.get("email"), "AS Updates - Daily School Update", html):
+                    success_count += 1
         
-        print(f"[✓] Sent emails to {success_count}/{len(users)} users")
+        if success_count > 0:
+            print(f"[✓] Sent emails to {success_count}/{len(users)} users at {current_exact_time}")
+        else:
+            print(f"[ℹ] No users scheduled for email at {current_exact_time}")
         
     except Exception as e:
         print(f"[✗] Scheduler error: {e}")
@@ -200,11 +262,11 @@ def start_scheduler():
     try:
         scheduler = BackgroundScheduler()
         
-        # Add job: every weekday at 08:00 UK time
-        # Mon-Fri (0-4), at 08:00
+        # Add job: every weekday at every hour (to support per-user email times)
+        # Mon-Fri (0-4), every hour at minute 0
         trigger = CronTrigger(
             day_of_week="mon-fri",
-            hour=8,
+            hour="*",
             minute=0,
             timezone=TIMEZONE
         )
@@ -213,12 +275,12 @@ def start_scheduler():
             send_daily_emails,
             trigger=trigger,
             id='daily_email_job',
-            name='Daily email sender',
+            name='Daily email sender (per-user times)',
             misfire_grace_time=600  # Allow up to 10 min late
         )
         
         scheduler.start()
-        print(f"[✓] Scheduler started - emails at 08:00 {TIMEZONE}, Mon-Fri")
+        print(f"[✓] Scheduler started - emails sent hourly Mon-Fri at user-configured times ({TIMEZONE})")
         return scheduler
         
     except Exception as e:

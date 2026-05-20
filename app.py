@@ -611,6 +611,7 @@ def dashboard():
             email=user.get("email", session.get("user_email")),
             name=user.get("name", ""),
             send_emails=user.get("send_emails", 1),
+            email_send_time=user.get("email_send_time", "08:00"),
             holiday_mode=settings["holiday_mode"],
             holiday_weeks=settings["holiday_weeks"],
             ab_week=settings["ab_week"],
@@ -750,6 +751,37 @@ def toggle_emails():
     except Exception as e:
         print(f"[✗] Toggle emails error: {e}")
         flash("Error updating setting", "danger")
+    
+    return redirect(url_for("dashboard"))
+
+
+@app.route("/dashboard/update-email-time", methods=["POST"])
+@login_required
+def dashboard_update_email_time():
+    """Update user's preferred email send time."""
+    
+    try:
+        email_send_time = request.form.get("email_send_time", "08:00")
+        
+        # Validate time format (HH:MM)
+        if not email_send_time or len(email_send_time.split(":")) != 2:
+            flash("Invalid time format", "danger")
+            return redirect(url_for("dashboard"))
+        
+        db = get_db()
+        c = db.cursor()
+        c.execute(
+            "UPDATE users SET email_send_time=? WHERE id=?",
+            (email_send_time, session["user_id"])
+        )
+        db.commit()
+        db.close()
+        
+        flash(f"Email time updated to {email_send_time}", "success")
+        
+    except Exception as e:
+        print(f"[✗] Update email time error: {e}")
+        flash("Error updating email time", "danger")
     
     return redirect(url_for("dashboard"))
 

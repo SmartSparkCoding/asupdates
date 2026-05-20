@@ -77,6 +77,7 @@
             <h2>🔧 Admin Dashboard</h2>
         </div>
         <div class="topbar-right">
+            <button id="theme-toggle" class="btn btn-small btn-outline" title="Toggle dark mode">🌙 Dark Mode</button>
             <a href="/logout" class="btn btn-small btn-outline">Logout</a>
         </div>
     </div>
@@ -358,7 +359,20 @@
     </div>
 
     <footer class="page-footer">
-        <p>AS Updates Admin Panel • <a href="/api/status">API Status</a></p>
+        <p>AS Updates &copy; <span id="year"></span> &bull; Felix & Jacob &bull; <a href="/api/status">API Status</a></p>
     </footer>
-</body>
-</html>
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+        const themeToggle = document.getElementById('theme-toggle');
+        const html = document.documentElement;
+        const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        if (savedTheme === 'dark') html.setAttribute('data-theme', 'dark');
+        themeToggle.addEventListener('click', () => {
+            const current = html.getAttribute('data-theme');
+            const newTheme = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            themeToggle.textContent = newTheme === 'dark' ? '🌟 Light Mode' : '🌙 Dark Mode';
+        });
+        if (savedTheme === 'dark') themeToggle.textContent = '🌟 Light Mode';
+    </script>

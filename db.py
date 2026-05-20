@@ -68,6 +68,8 @@ def init_db():
                 send_emails INTEGER DEFAULT 1,
                 timetable_a TEXT DEFAULT '',
                 timetable_b TEXT DEFAULT '',
+                email_send_time TEXT DEFAULT '08:00',
+                timezone TEXT DEFAULT 'Europe/London',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """
@@ -130,6 +132,8 @@ def verify_schema():
                 send_emails INTEGER DEFAULT 1,
                 timetable_a TEXT DEFAULT '',
                 timetable_b TEXT DEFAULT '',
+                email_send_time TEXT DEFAULT '08:00',
+                timezone TEXT DEFAULT 'Europe/London',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """
@@ -153,6 +157,8 @@ def verify_schema():
         _ensure_column(conn, "users", "timetable_a", "TEXT DEFAULT ''")
         _ensure_column(conn, "users", "timetable_b", "TEXT DEFAULT ''")
         _ensure_column(conn, "users", "day_timetable", "TEXT DEFAULT ''")
+        _ensure_column(conn, "users", "email_send_time", "TEXT DEFAULT '08:00'")
+        _ensure_column(conn, "users", "timezone", "TEXT DEFAULT 'Europe/London'")
         _ensure_column(conn, "settings", "holiday_weeks", "INTEGER DEFAULT 0")
         _ensure_column(conn, "settings", "menu_week", "INTEGER DEFAULT 1")
         _ensure_column(conn, "settings", "menu_week_1", "TEXT DEFAULT ''")
