@@ -330,13 +330,13 @@ a:hover {
     display: none;
     position: fixed;
     inset: 0;
-    z-index: 99999;
+    z-index: 2147483647;
     align-items: center;
     justify-content: center;
     padding: 20px;
-    background: rgba(15, 23, 42, 0.5);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(75, 85, 99, 0.78);
+    backdrop-filter: blur(10px) grayscale(0.15);
+    -webkit-backdrop-filter: blur(10px) grayscale(0.15);
     animation: fadeInOverlay 0.3s ease;
 }
 
@@ -346,6 +346,8 @@ a:hover {
 }
 
 .modal-shell {
+    position: relative;
+    z-index: 1;
     width: min(720px, 100%);
     max-height: 90vh;
     overflow: auto;
