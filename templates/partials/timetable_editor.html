@@ -1,0 +1,89 @@
+<input type="checkbox" id="{{ timetable_editor_modal_id }}" class="modal-toggle">
+<label for="{{ timetable_editor_modal_id }}" class="{{ timetable_editor_button_class }}">{{ timetable_editor_trigger_label }}</label>
+
+<div class="modal-overlay timetable-editor-modal">
+    <div class="modal-shell modal-shell-large">
+        <div class="modal-header">
+            <h3>{{ timetable_editor_title }}</h3>
+            <label for="{{ timetable_editor_modal_id }}" class="modal-close">Close</label>
+        </div>
+        <div class="modal-body">
+            <p class="card-description">{{ timetable_editor_description }}</p>
+            <div class="schedule-editor-grid">
+                {% for section in timetable_editor_sections %}
+                    <div class="schedule-week-panel" style="grid-column: 1 / -1;">
+                        <h4>{{ section.label }}</h4>
+                        {% if section.help_text %}
+                            <p class="help-text">{{ section.help_text }}</p>
+                        {% endif %}
+                        <div class="timetable-days-grid">
+                            {% for day in weekdays %}
+                                <div class="schedule-day-panel">
+                                    <h5>{{ day }}</h5>
+                                    <table class="schedule-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Period</th>
+                                                <th>Subject</th>
+                                                <th>Room</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for period in period_order %}
+                                                {% set period_slug = period|lower|replace(' / ', '_')|replace(' ', '_') %}
+                                                {% set period_data = section.week_data.get(day, {}).get(period, {}) %}
+                                                <tr>
+                                                    <td class="period-cell">{{ period }}</td>
+                                                    <td>
+                                                        <input type="text" name="{{ section.prefix }}_{{ day.lower() }}_{{ period_slug }}_subject" value="{{ period_data.get('subject', '') }}" placeholder="Subject">
+                                                    </td>
+                                                    <td>
+                                                        <input type="text" name="{{ section.prefix }}_{{ day.lower() }}_{{ period_slug }}_room" value="{{ period_data.get('room', '') }}" placeholder="Room">
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="schedule-week-panel timetable-day-editor" style="margin-top: 20px;">
+                <h4>{{ timetable_editor_day_title }}</h4>
+                {% if timetable_editor_day_help_text %}
+                    <p class="help-text">{{ timetable_editor_day_help_text }}</p>
+                {% endif %}
+                <div class="timetable-days-grid">
+                    {% for day in weekdays %}
+                        <div class="schedule-day-panel" style="grid-column: 1 / -1;">
+                            <h5>{{ day }}</h5>
+                            <table class="schedule-table">
+                                <thead>
+                                    <tr>
+                                        <th>Activity</th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for field in day_timetable_fields %}
+                                        <tr>
+                                            <td class="period-cell">{{ field.replace('_', ' ')|title }}</td>
+                                            <td>
+                                                <input type="text" name="day_timetable_{{ day.lower() }}_{{ field }}" value="{{ day_timetable.get(day, {}).get(field, '') }}" placeholder="{{ field.replace('_', ' ')|title }}">
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <button type="submit" class="{{ timetable_editor_submit_class }}">{{ timetable_editor_submit_label }}</button>
+        </div>
+    </div>
+</div>

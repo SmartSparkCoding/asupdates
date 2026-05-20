@@ -12,133 +12,6 @@
         <a href="https://hackanomous-rsvp.fillout.com/t/kYWQReDmZkus" target="_blank" class="feedback-btn">💬 Give feedback here</a>
     </div>
 
-    <!-- Modals moved to top-level so they overlay viewport correctly -->
-    <input type="checkbox" id="day-timetable-modal" class="modal-toggle">
-    <div class="modal-overlay day-timetable-modal">
-        <div class="modal-shell modal-shell-large">
-            <div class="modal-header">
-                <h3>Edit Daily Schedule</h3>
-                <label for="day-timetable-modal" class="modal-close">Close</label>
-            </div>
-            <div class="modal-body">
-                <form method="POST" action="/dashboard/update-timetable" class="form-group">
-                    <div class="schedule-editor-grid">
-                        {% for week_label, prefix, week_data in [('Week A', 'timetable_a', timetable_a), ('Week B', 'timetable_b', timetable_b)] %}
-                            <div class="schedule-week-panel" style="grid-column: 1 / -1;">
-                                <h4>{{ week_label }}</h4>
-                                <p class="help-text">Each day has its own 8-slot timetable.</p>
-                                <div class="timetable-days-grid">
-                                    {% for day in weekdays %}
-                                        <div class="schedule-day-panel">
-                                            <h5>{{ day }}</h5>
-                                            <table class="schedule-table">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Period</th>
-                                                        <th>Subject</th>
-                                                        <th>Room</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {% for period in period_order %}
-                                                        {% set period_slug = period|lower|replace(' / ', '_')|replace(' ', '_') %}
-                                                        {% set period_data = week_data.get(day, {}).get(period, {}) %}
-                                                        <tr>
-                                                            <td class="period-cell">{{ period }}</td>
-                                                            <td>
-                                                                <input type="text" name="{{ prefix }}_{{ day.lower() }}_{{ period_slug }}_subject" value="{{ period_data.get('subject', '') }}" placeholder="Subject">
-                                                            </td>
-                                                            <td>
-                                                                <input type="text" name="{{ prefix }}_{{ day.lower() }}_{{ period_slug }}_room" value="{{ period_data.get('room', '') }}" placeholder="Room">
-                                                            </td>
-                                                        </tr>
-                                                    {% endfor %}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                    <div class="schedule-week-panel" style="margin-top: 20px;">
-                        <h4>Before School, After School & Lunch Clubs</h4>
-                        <div class="timetable-days-grid">
-                            {% for day in weekdays %}
-                                <div class="schedule-day-panel" style="grid-column: 1 / -1;">
-                                    <h5>{{ day }}</h5>
-                                    <table class="schedule-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Activity</th>
-                                                <th>Details</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {% for field in day_timetable_fields %}
-                                                <tr>
-                                                    <td class="period-cell">{{ field.replace('_', ' ')|title }}</td>
-                                                    <td>
-                                                        <input type="text" name="day_timetable_{{ day.lower() }}_{{ field }}" value="{{ day_timetable.get(day, {}).get(field, '') }}" placeholder="{{ field.replace('_', ' ')|title }}">
-                                                    </td>
-                                                </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                    <button type="submit" class="btn btn-primary" style="margin-top: 15px;">Save Timetables</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <input type="checkbox" id="period-timetable-modal" class="modal-toggle">
-    <div class="modal-overlay period-timetable-modal">
-        <div class="modal-shell modal-shell-large">
-            <div class="modal-header">
-                <h3>Edit Period Timetable (Periods 1-7)</h3>
-                <label for="period-timetable-modal" class="modal-close">Close</label>
-            </div>
-            <div class="modal-body">
-                <form method="POST" action="/dashboard/update-timetable" class="form-group">
-                    <div class="schedule-editor-grid">
-                        {% for week_label, week_data in [('Week A', timetable_a), ('Week B', timetable_b)] %}
-                            <div class="schedule-week-panel">
-                                <h4>{{ week_label }}</h4>
-                                <table class="schedule-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Period</th>
-                                            <th>Subject</th>
-                                            <th>Room</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for period in period_order %}
-                                            <tr>
-                                                <td class="period-cell">{{ period }}</td>
-                                                <td>
-                                                    <input type="text" name="{{ 'timetable_a' if week_label == 'Week A' else 'timetable_b' }}_{{ period }}_subject" value="{{ week_data.get(period, {}).get('subject', '') }}" placeholder="Subject">
-                                                </td>
-                                                <td>
-                                                    <input type="text" name="{{ 'timetable_a' if week_label == 'Week A' else 'timetable_b' }}_{{ period }}_room" value="{{ week_data.get(period, {}).get('room', '') }}" placeholder="Room">
-                                                </td>
-                                            </tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
-                            </div>
-                        {% endfor %}
-                    </div>
-                    <button type="submit" class="btn btn-primary" style="margin-top: 15px;">Save Period Timetable</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <div class="topbar">
         <div class="topbar-left">
             <h2>📊 Dashboard</h2>
@@ -195,22 +68,26 @@
         <!-- Daily Timetable Card -->
         <div class="card">
             <div class="card-header">
-                <h3>📚 Your Daily Schedule</h3>
+                <h3>📚 Your Timetables</h3>
             </div>
             <div class="card-body">
-                <p class="card-description">Add your before school, after school, and lunch club activities for each day of the week.</p>
-                <label for="day-timetable-modal" class="btn btn-primary">Edit Daily Schedule</label>
-            </div>
-        </div>
-
-        <!-- Period Timetable Card -->
-        <div class="card">
-            <div class="card-header">
-                <h3>🗓️ Your Period Timetable</h3>
-            </div>
-            <div class="card-body">
-                <p class="card-description">Edit your lesson timetable for Week A and Week B (Periods 1-7).</p>
-                <label for="period-timetable-modal" class="btn btn-primary">Edit Period Timetable</label>
+                <p class="card-description">Edit your Week A and Week B lesson timetable, plus your daily schedule, in one place.</p>
+                <form method="POST" action="/dashboard/update-timetable" class="form-group">
+                    {% set timetable_editor_modal_id = "dashboard-timetable-editor" %}
+                    {% set timetable_editor_trigger_label = "Edit Timetables" %}
+                    {% set timetable_editor_button_class = "btn btn-primary" %}
+                    {% set timetable_editor_title = "Timetable Editor" %}
+                    {% set timetable_editor_description = "Update your period timetable and daily activities here." %}
+                    {% set timetable_editor_sections = [
+                        {'label': 'Week A', 'prefix': 'timetable_a', 'week_data': timetable_a, 'help_text': 'Each day has its own period timetable.'},
+                        {'label': 'Week B', 'prefix': 'timetable_b', 'week_data': timetable_b, 'help_text': 'Keep your second week in sync here.'},
+                    ] %}
+                    {% set timetable_editor_day_title = "Before School, After School & Lunch Clubs" %}
+                    {% set timetable_editor_day_help_text = "Add your clubs and activities for each weekday." %}
+                    {% set timetable_editor_submit_class = "btn btn-primary" %}
+                    {% set timetable_editor_submit_label = "Save Timetables" %}
+                    {% include "partials/timetable_editor.html" %}
+                </form>
             </div>
         </div>
 

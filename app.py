@@ -1,11 +1,14 @@
 import json
 
 from flask import Flask, render_template, request, redirect, session, url_for, flash, jsonify
+from markupsafe import Markup
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 from datetime import datetime
 import os
 from dotenv import load_dotenv
+import bleach
+import markdown as markdown_lib
 
 from config import SECRET_KEY, ADMIN_PASSWORD, DEBUG, DATABASE
 from db import get_db, init_db, verify_schema
@@ -137,6 +140,43 @@ def _notice_lines(raw_notice):
         return []
     lines = [line.strip() for line in str(raw_notice).splitlines()]
     return [line for line in lines if line]
+
+
+def _render_markdown_notice(raw_notice):
+    if not raw_notice:
+        return Markup("")
+
+    rendered = markdown_lib.markdown(
+        str(raw_notice),
+        extensions=["extra", "nl2br", "sane_lists", "fenced_code"],
+    )
+    cleaned = bleach.clean(
+        rendered,
+        tags=[
+            "p",
+            "br",
+            "strong",
+            "em",
+            "ul",
+            "ol",
+            "li",
+            "blockquote",
+            "pre",
+            "code",
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "h5",
+            "h6",
+            "a",
+            "hr",
+        ],
+        attributes={"a": ["href", "title", "rel", "target"]},
+        protocols=["http", "https", "mailto"],
+        strip=True,
+    )
+    return Markup(cleaned)
 
 
 def _parse_menu_data(menu_text):
@@ -737,6 +777,13 @@ def admin_dashboard():
         menu_week_2_data = parse_week_menu(menu_week_2)
         menu_week_3_data = parse_week_menu(menu_week_3)
         user_count = len(users) if users else 0
+        notice_history_rendered = [
+            {
+                "created_at": item[1],
+                "notice_html": _render_markdown_notice(item[0]),
+            }
+            for item in notice_history
+        ]
         
         # Convert to list of dicts for easier template use
         users_list = []
@@ -762,7 +809,8 @@ def admin_dashboard():
             menu_week_2=menu_week_2_data,
             menu_week_3=menu_week_3_data,
             school_notice=school_notice,
-            notice_history=notice_history,
+            school_notice_html=_render_markdown_notice(school_notice),
+            notice_history=notice_history_rendered,
             weekdays=WEEKDAYS,
             menu_fields=["main", "sides", "pasta_bar", "street_food", "potatoes", "soup", "vegetarian", "dessert"],
         )

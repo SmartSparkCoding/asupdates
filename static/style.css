@@ -522,6 +522,81 @@ a:hover {
     margin-bottom: 6px;
 }
 
+.markdown-content {
+    color: var(--gray-dark);
+    line-height: 1.7;
+}
+
+.markdown-content > :first-child {
+    margin-top: 0;
+}
+
+.markdown-content > :last-child {
+    margin-bottom: 0;
+}
+
+.markdown-content p,
+.markdown-content ul,
+.markdown-content ol,
+.markdown-content blockquote,
+.markdown-content pre,
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+    margin: 0 0 12px;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+    padding-left: 22px;
+}
+
+.markdown-content li {
+    margin-bottom: 6px;
+}
+
+.markdown-content a {
+    word-break: break-word;
+}
+
+.markdown-content code {
+    padding: 0.15rem 0.35rem;
+    border-radius: 6px;
+    background: rgba(15, 118, 110, 0.08);
+    color: var(--navy-dark);
+    font-size: 0.92em;
+}
+
+.markdown-content pre {
+    padding: 14px 16px;
+    overflow-x: auto;
+    border-radius: 10px;
+    background: #f3f4f6;
+}
+
+.markdown-content pre code {
+    padding: 0;
+    background: transparent;
+    color: inherit;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+    color: var(--navy-dark);
+    line-height: 1.3;
+}
+
+.notice-history-entry {
+    margin-top: 8px;
+}
+
 .btn-secondary {
     background: rgba(107, 114, 128, 0.15);
     color: var(--navy);

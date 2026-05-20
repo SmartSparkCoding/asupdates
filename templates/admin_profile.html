@@ -62,110 +62,21 @@
                         </div>
                     </div>
 
-                    <input type="checkbox" id="schedule-modal-toggle" class="modal-toggle">
-                    <label for="schedule-modal-toggle" class="btn btn-secondary">Edit Timetables</label>
+                    {% set timetable_editor_modal_id = "admin-profile-timetable-editor" %}
+                    {% set timetable_editor_trigger_label = "Edit Timetables" %}
+                    {% set timetable_editor_button_class = "btn btn-secondary" %}
+                    {% set timetable_editor_title = "Timetable Editor" %}
+                    {% set timetable_editor_description = "Edit each day separately for Week A, Week B, and daily clubs." %}
+                    {% set timetable_editor_sections = [
+                        {'label': 'Week A', 'prefix': 'timetable_a', 'week_data': timetable_a, 'help_text': 'Update the first week here.'},
+                        {'label': 'Week B', 'prefix': 'timetable_b', 'week_data': timetable_b, 'help_text': 'Update the second week here.'},
+                    ] %}
+                    {% set timetable_editor_day_title = "Before School, After School & Lunch Clubs" %}
+                    {% set timetable_editor_day_help_text = "Edit the daily schedule for each weekday." %}
+                    {% set timetable_editor_submit_class = "btn btn-primary btn-large" %}
+                    {% set timetable_editor_submit_label = "Save Profile" %}
+                    {% include "partials/timetable_editor.html" %}
 
-                    <div class="modal-overlay schedule-modal">
-                        <div class="modal-shell modal-shell-large">
-                            <div class="modal-header">
-                                <h3>Period Timetable Editor</h3>
-                                <label for="schedule-modal-toggle" class="modal-close">Close</label>
-                            </div>
-                            <div class="modal-body">
-                                <p class="card-description">Edit each day separately for Week A and Week B.</p>
-                                <div class="schedule-editor-grid">
-                                    {% for week_label, prefix, week_data in [('Week A', 'timetable_a', timetable_a), ('Week B', 'timetable_b', timetable_b)] %}
-                                        <div class="schedule-week-panel" style="grid-column: 1 / -1;">
-                                            <h4>{{ week_label }}</h4>
-                                            <div class="timetable-days-grid">
-                                                {% for day in weekdays %}
-                                                    <div class="schedule-day-panel">
-                                                        <h5>{{ day }}</h5>
-                                                        <table class="schedule-table">
-                                                            <thead>
-                                                                <tr>
-                                                                    <th>Period</th>
-                                                                    <th>Subject</th>
-                                                                    <th>Room</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                {% for period in period_order %}
-                                                                    {% set period_slug = period|lower|replace(' / ', '_')|replace(' ', '_') %}
-                                                                    {% set period_data = week_data.get(day, {}).get(period, {}) %}
-                                                                    <tr>
-                                                                        <td class="period-cell">{{ period }}</td>
-                                                                        <td>
-                                                                            <input type="text" name="{{ prefix }}_{{ day.lower() }}_{{ period_slug }}_subject" value="{{ period_data.get('subject', '') }}" placeholder="Subject">
-                                                                        </td>
-                                                                        <td>
-                                                                            <input type="text" name="{{ prefix }}_{{ day.lower() }}_{{ period_slug }}_room" value="{{ period_data.get('room', '') }}" placeholder="Room">
-                                                                        </td>
-                                                                    </tr>
-                                                                {% endfor %}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                {% endfor %}
-                                            </div>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <label for="schedule-modal-toggle" class="btn btn-outline">Done</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <input type="checkbox" id="day-schedule-modal-toggle" class="modal-toggle">
-                    <label for="day-schedule-modal-toggle" class="btn btn-secondary">Edit Daily Schedule</label>
-                    <div class="modal-overlay day-schedule-modal">
-                        <div class="modal-shell modal-shell-large">
-                            <div class="modal-header">
-                                <h3>Daily Schedule Editor</h3>
-                                <label for="day-schedule-modal-toggle" class="modal-close">Close</label>
-                            </div>
-                            <div class="modal-body">
-                                <p class="card-description">Edit before school, after school, and lunch clubs for each weekday.</p>
-                                <div class="schedule-editor-grid">
-                                    <div class="schedule-week-panel" style="grid-column: 1 / -1;">
-                                        <h4>Daily Schedule</h4>
-                                        <div class="timetable-days-grid">
-                                            {% for day in weekdays %}
-                                                <div class="schedule-day-panel" style="grid-column: 1 / -1;">
-                                                    <h5>{{ day }}</h5>
-                                                    <table class="schedule-table">
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Activity</th>
-                                                                <th>Details</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                            {% for field in day_timetable_fields %}
-                                                                <tr>
-                                                                    <td class="period-cell">{{ field.replace('_', ' ')|title }}</td>
-                                                                    <td>
-                                                                        <input type="text" name="day_timetable_{{ day.lower() }}_{{ field }}" value="{{ day_timetable.get(day, {}).get(field, '') }}" placeholder="{{ field.replace('_', ' ')|title }}">
-                                                                    </td>
-                                                                </tr>
-                                                            {% endfor %}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-                                            {% endfor %}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <label for="day-schedule-modal-toggle" class="btn btn-outline">Done</label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary btn-large">Save Profile</button>
                 </form>
             </div>
         </div>

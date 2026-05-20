@@ -2,6 +2,13 @@
 
 ## ✅ All Changes Made (Current Session)
 
+### 3. Timetable Reuse and Markdown Notices
+
+- Extracted the timetable editor into a shared include at `templates/partials/timetable_editor.html`
+- Reused that editor in `templates/dashboard.html` and `templates/admin_profile.html`
+- Added Markdown rendering for school notices in `templates/admin.html` with sanitized HTML output
+- Updated `requirements.txt` for `bleach` and `Markdown`
+
 ### 1. Critical Bug Fixes
 
 #### 🐛 Admin Dashboard Duplication  
