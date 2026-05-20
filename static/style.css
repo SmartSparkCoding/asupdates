@@ -436,6 +436,31 @@ a:hover {
     text-decoration: none;
 }
 
+.modal-trigger-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 11px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: center;
+    text-decoration: none;
+    white-space: nowrap;
+    user-select: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.modal-trigger-btn:hover {
+    text-decoration: none;
+    transform: translateY(-2px);
+}
+
 .more-info-wrap {
     width: 100%;
     display: flex;

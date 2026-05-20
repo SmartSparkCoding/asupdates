@@ -1,5 +1,5 @@
 <input type="checkbox" id="{{ timetable_editor_modal_id }}" class="modal-toggle">
-<label for="{{ timetable_editor_modal_id }}" class="{{ timetable_editor_button_class }}">{{ timetable_editor_trigger_label }}</label>
+<label for="{{ timetable_editor_modal_id }}" class="{{ timetable_editor_trigger_class | default(timetable_editor_button_class) }}">{{ timetable_editor_trigger_label }}</label>
 
 <div class="modal-overlay timetable-editor-modal">
     <div class="modal-shell modal-shell-large">
