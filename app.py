@@ -1,4 +1,5 @@
 import json
+import html
 
 from flask import Flask, render_template, request, redirect, session, url_for, flash, jsonify
 from markupsafe import Markup
@@ -7,8 +8,16 @@ from functools import wraps
 from datetime import datetime
 import os
 from dotenv import load_dotenv
-import bleach
-import markdown as markdown_lib
+
+try:
+    import bleach
+except ImportError:  # pragma: no cover - graceful fallback for unprepared environments
+    bleach = None
+
+try:
+    import markdown as markdown_lib
+except ImportError:  # pragma: no cover - graceful fallback for unprepared environments
+    markdown_lib = None
 
 from config import SECRET_KEY, ADMIN_PASSWORD, DEBUG, DATABASE
 from db import get_db, init_db, verify_schema
@@ -145,6 +154,15 @@ def _notice_lines(raw_notice):
 def _render_markdown_notice(raw_notice):
     if not raw_notice:
         return Markup("")
+
+    if bleach is None or markdown_lib is None:
+        escaped_notice = html.escape(str(raw_notice))
+        paragraphs = [
+            f"<p>{line}</p>"
+            for line in escaped_notice.splitlines()
+            if line.strip()
+        ]
+        return Markup("".join(paragraphs) or f"<p>{escaped_notice}</p>")
 
     rendered = markdown_lib.markdown(
         str(raw_notice),
