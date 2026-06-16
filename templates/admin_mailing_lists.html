@@ -112,13 +112,17 @@
                                         <h4>Members</h4>
                                         <span class="help-text">Select everyone who should receive this mailing list.</span>
                                     </div>
-                                    <select name="member_ids" multiple size="12" class="mailing-member-select">
+                                    <div class="mailing-member-list">
                                         {% for user in users %}
-                                            <option value="{{ user.id }}" {% if user.id in mailing_list.member_ids %}selected{% endif %}>
-                                                {{ user.name or user.email }}{% if user.send_emails == 0 %} (emails off){% endif %}
-                                            </option>
+                                            <label class="mailing-member-item">
+                                                <input type="checkbox" name="member_ids" value="{{ user.id }}" {% if user.id in mailing_list.member_ids %}checked{% endif %}>
+                                                <span class="mailing-member-label-text">
+                                                    <strong>{{ user.name or user.email }}</strong>
+                                                    <span class="help-text">{{ user.email }}{% if user.send_emails == 0 %} • emails off{% endif %}</span>
+                                                </span>
+                                            </label>
                                         {% endfor %}
-                                    </select>
+                                    </div>
                                 </div>
 
                                 <div class="mailing-list-section mailing-list-section-compose" data-mode-section="premade">

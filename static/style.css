@@ -1458,23 +1458,65 @@ a:hover {
     grid-row: span 2;
 }
 
-.mailing-member-select,
 .mailing-textarea {
     width: 100%;
 }
 
-.mailing-member-select {
-    min-height: 100%;
+.mailing-member-list {
+    display: grid;
+    gap: 10px;
+    max-height: 420px;
+    overflow: auto;
+    padding-right: 4px;
+}
+
+.mailing-member-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
     border-radius: 14px;
-    padding: 10px;
     border: 1px solid rgba(203, 213, 225, 0.9);
     background: rgba(248, 250, 252, 0.92);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.mailing-member-item:hover {
+    transform: translateY(-1px);
+    border-color: rgba(20, 184, 166, 0.35);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+[data-theme="dark"] .mailing-member-item {
+    background: rgba(17, 24, 39, 0.92);
+    border-color: rgba(148, 163, 184, 0.22);
+}
+
+[data-theme="dark"] .mailing-member-item:hover {
+    border-color: rgba(94, 234, 212, 0.45);
+}
+
+.mailing-member-item input[type="checkbox"] {
+    margin-top: 3px;
+    width: 18px;
+    height: 18px;
+    accent-color: var(--navy-light);
+    flex: 0 0 auto;
+}
+
+.mailing-member-label-text {
+    display: grid;
+    gap: 4px;
+    min-width: 0;
+}
+
+.mailing-member-label-text strong {
     color: var(--text-primary);
 }
 
-[data-theme="dark"] .mailing-member-select {
-    background: rgba(17, 24, 39, 0.92);
-    border-color: rgba(148, 163, 184, 0.22);
+.mailing-member-label-text .help-text {
+    margin-top: 0;
 }
 
 .mailing-textarea {
