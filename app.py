@@ -1302,6 +1302,9 @@ def admin_dashboard():
         settings = c.fetchone()
         c.execute("SELECT notice_text, created_at FROM school_notice_history ORDER BY created_at DESC LIMIT 4")
         notice_history = c.fetchall()
+        c.execute("SELECT COUNT(*) FROM mailing_lists")
+        mailing_list_count_row = c.fetchone()
+        mailing_list_count = mailing_list_count_row[0] if mailing_list_count_row else 0
         
         db.close()
         
@@ -1325,9 +1328,6 @@ def admin_dashboard():
             for item in notice_history
         ]
         active_sessions = _active_logged_in_users()
-        c.execute("SELECT COUNT(*) FROM mailing_lists")
-        mailing_list_count_row = c.fetchone()
-        mailing_list_count = mailing_list_count_row[0] if mailing_list_count_row else 0
         
         # Convert to list of dicts for easier template use
         homework_by_user = {}
