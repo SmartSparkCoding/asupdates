@@ -1414,6 +1414,99 @@ a:hover {
     background: var(--red);
 }
 
+.mailing-lists-page {
+    display: grid;
+    gap: 24px;
+}
+
+.mailing-list-summary {
+    cursor: pointer;
+    align-items: flex-start;
+}
+
+.mailing-list-summary::-webkit-details-marker {
+    display: none;
+}
+
+.mailing-list-summary-meta {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.mailing-list-layout {
+    display: grid;
+    grid-template-columns: minmax(240px, 0.9fr) minmax(280px, 1.1fr);
+    gap: 18px;
+    margin-top: 18px;
+}
+
+.mailing-list-section {
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(226, 232, 240, 0.95);
+    border-radius: 18px;
+    padding: 16px;
+}
+
+[data-theme="dark"] .mailing-list-section {
+    background: rgba(15, 23, 42, 0.72);
+    border-color: rgba(148, 163, 184, 0.18);
+}
+
+.mailing-list-section-members {
+    grid-row: span 2;
+}
+
+.mailing-member-select,
+.mailing-textarea {
+    width: 100%;
+}
+
+.mailing-member-select {
+    min-height: 100%;
+    border-radius: 14px;
+    padding: 10px;
+    border: 1px solid rgba(203, 213, 225, 0.9);
+    background: rgba(248, 250, 252, 0.92);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .mailing-member-select {
+    background: rgba(17, 24, 39, 0.92);
+    border-color: rgba(148, 163, 184, 0.22);
+}
+
+.mailing-textarea {
+    min-height: 180px;
+    margin-bottom: 14px;
+}
+
+.mailing-html {
+    min-height: 240px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+.mailing-footer {
+    min-height: 140px;
+}
+
+.mailing-list-actions-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.mailing-list-actions-row .btn {
+    min-width: 140px;
+}
+
+.mailing-list-overview-card .card-body {
+    display: grid;
+    gap: 18px;
+}
+
 .timetable-table {
     width: 100%;
     border-collapse: collapse;
@@ -1697,6 +1790,18 @@ a:hover {
 
     .choice-buttons {
         grid-template-columns: 1fr;
+    }
+
+    .mailing-list-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .mailing-list-section-members {
+        grid-row: auto;
+    }
+
+    .mailing-list-actions-row {
+        flex-direction: column;
     }
 
     .login-container {

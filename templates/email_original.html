@@ -34,6 +34,14 @@
 			line-height: inherit
 		}
 
+		.markdown-content img,
+		.section-content img {
+			max-width: 100%;
+			height: auto;
+			display: block;
+			margin: 12px 0;
+		}
+
 		.desktop_hide,
 		.desktop_hide table {
 			mso-hide: all;
@@ -320,8 +328,12 @@
 																	<table class="paragraph_block block-14" width="100%" border="0" cellpadding="10" cellspacing="0" role="presentation" style="mso-table-lspace: 0pt; mso-table-rspace: 0pt; word-break: break-word;">
 																		<tr>
 																			<td class="pad">
-																				<div style="color:#000000;direction:ltr;font-family:'Open Sans','Lucida Sans';font-size:16px;font-weight:400;letter-spacing:0px;line-height:1.2;text-align:left;mso-line-height-alt:19px;">
-																					<p style="margin: 0;">{{ school_notice }}</p>
+																				<div class="markdown-content" style="color:#000000;direction:ltr;font-family:'Open Sans','Lucida Sans';font-size:16px;font-weight:400;letter-spacing:0px;line-height:1.5;text-align:left;mso-line-height-alt:24px;">
+																					{% if school_notice_html %}
+																						{{ school_notice_html }}
+																					{% else %}
+																						<p style="margin: 0;">{{ school_notice }}</p>
+																					{% endif %}
 																				</div>
 																			</td>
 																		</tr>

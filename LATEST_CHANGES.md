@@ -2,6 +2,14 @@
 
 ## ✅ All Changes Made (Current Session)
 
+### 8. Mailing Lists Control Centre
+
+- Added a dedicated admin mailing-lists page for creating, editing, previewing, and sending list emails
+- Added mailing list database tables for lists, members, and send logs
+- Added premade and manual HTML mailing-list compose modes with per-recipient placeholder replacement
+- Added a shared footer field for list emails and a modern mailing-list email template
+- Added a dashboard shortcut card so admins can open the mailing-lists manager quickly
+
 ### 7. Homework Manager, Student Settings, and Dashboard Selector Refresh
 
 - Added a dedicated homework manager page with add, complete, delete, and ordered list management

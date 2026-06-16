@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ subject or title or list_name }}</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #eef2ff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: #0f172a;
+        }
+
+        .shell {
+            width: 100%;
+            padding: 36px 16px;
+            box-sizing: border-box;
+        }
+
+        .card {
+            max-width: 760px;
+            margin: 0 auto;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 250, 252, 0.98) 100%);
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+        }
+
+        .hero {
+            padding: 30px 32px 18px;
+            background: linear-gradient(135deg, #0f766e 0%, #14b8a6 48%, #2563eb 100%);
+            color: #ffffff;
+        }
+
+        .kicker {
+            font-size: 12px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .hero h1 {
+            margin: 0;
+            font-size: 32px;
+            line-height: 1.1;
+        }
+
+        .hero .meta {
+            margin-top: 12px;
+            font-size: 15px;
+            opacity: 0.95;
+        }
+
+        .body {
+            padding: 30px 32px 20px;
+        }
+
+        .body h2,
+        .body h3,
+        .body h4 {
+            margin-top: 0;
+            color: #0f766e;
+        }
+
+        .body p,
+        .body li {
+            font-size: 16px;
+            line-height: 1.7;
+        }
+
+        .body img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 14px 0;
+            border-radius: 16px;
+        }
+
+        .signature {
+            margin-top: 22px;
+            padding-top: 18px;
+            border-top: 1px solid rgba(148, 163, 184, 0.24);
+        }
+
+        .footer {
+            margin: 0 32px 32px;
+            padding: 18px 20px;
+            border-radius: 18px;
+            background: rgba(15, 118, 110, 0.06);
+            border: 1px solid rgba(15, 118, 110, 0.14);
+            color: #334155;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .footer img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            margin: 12px 0;
+        }
+
+        .preview-tag {
+            display: inline-block;
+            margin-top: 14px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.16);
+            font-size: 12px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 640px) {
+            .shell {
+                padding: 16px 10px;
+            }
+
+            .hero,
+            .body,
+            .footer {
+                padding-left: 18px;
+                padding-right: 18px;
+            }
+
+            .hero h1 {
+                font-size: 26px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <div class="card">
+            <div class="hero">
+                <div class="kicker">{{ list_name }}</div>
+                <h1>{{ title or subject or list_name }}</h1>
+                <div class="meta">Hello {{ recipient_name }}, this message is for {{ list_name }}{% if subject %} • {{ subject }}{% endif %}</div>
+                {% if preview_mode %}
+                    <div class="preview-tag">Preview mode</div>
+                {% endif %}
+            </div>
+            <div class="body">
+                {{ body_html }}
+                {% if signature_html %}
+                    <div class="signature">
+                        {{ signature_html }}
+                    </div>
+                {% endif %}
+            </div>
+            {% if footer_html %}
+                <div class="footer">
+                    {{ footer_html }}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

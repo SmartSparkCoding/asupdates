@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mailing Lists - Ashford School Updates</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="feedback-banner">
+        <a href="https://hackanomous-rsvp.fillout.com/t/kYWQReDmZkus" target="_blank" class="feedback-btn">💬 Give feedback here</a>
+    </div>
+
+    <div class="topbar admin-topbar">
+        <div class="topbar-left">
+            <a href="/admin" class="topbar-title-link">📬 Mailing Lists</a>
+        </div>
+        <div class="topbar-right">
+            <a href="/admin" class="btn btn-small btn-outline">Back to Admin</a>
+            <button id="theme-toggle" class="btn btn-small btn-outline" title="Toggle dark mode">🌙 Dark Mode</button>
+        </div>
+    </div>
+
+    {% if get_flashed_messages() %}
+        {% for category, message in get_flashed_messages(with_categories=true) %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="container mailing-lists-page">
+        <div class="card admin-card mailing-list-overview-card">
+            <div class="card-header">
+                <h3>✨ Mailing List Control Centre</h3>
+                <span class="badge badge-info">{{ mailing_lists|length }} lists</span>
+            </div>
+            <div class="card-body">
+                <p class="card-description">
+                    Build polished school mailing lists, edit membership, preview the final email, and send either a guided rich-text message or a manual HTML composition.
+                </p>
+                <div class="info-box">
+                    <h4>Placeholder Support</h4>
+                    <p>Use <strong>{(user_name)}</strong> and <strong>{(user_email)}</strong> anywhere in the body, subject, or footer. The system replaces them per recipient at send time.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="card admin-card">
+            <div class="card-header">
+                <h3>➕ Create Mailing List</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="/admin/mailing-lists/create" class="form-group mailing-list-create-form">
+                    <div class="account-grid">
+                        <div class="form-item">
+                            <label for="list-name">List Name</label>
+                            <input type="text" id="list-name" name="name" placeholder="Year 10 Parents" required>
+                        </div>
+                        <div class="form-item">
+                            <label for="list-description">Description</label>
+                            <input type="text" id="list-description" name="description" placeholder="Optional short description">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Create List</button>
+                </form>
+            </div>
+        </div>
+
+        {% if mailing_lists %}
+            {% for mailing_list in mailing_lists %}
+                <details class="card admin-card mailing-list-card" {% if loop.first %}open{% endif %} data-list-card>
+                    <summary class="card-header mailing-list-summary">
+                        <div>
+                            <h3>{{ mailing_list.name }}</h3>
+                            <p class="help-text">{{ mailing_list.description or 'No description yet' }}</p>
+                        </div>
+                        <div class="mailing-list-summary-meta">
+                            <span class="badge badge-info">{{ mailing_list.email_mode|title }}</span>
+                            <span class="badge badge-secondary">{{ mailing_list.member_count or 0 }} members</span>
+                        </div>
+                    </summary>
+                    <div class="card-body mailing-list-body">
+                        <form method="POST" action="/admin/mailing-lists/{{ mailing_list.id }}" class="form-group mailing-list-editor-form" data-mailing-form>
+                            <div class="account-grid">
+                                <div class="form-item">
+                                    <label for="list-name-{{ mailing_list.id }}">List Name</label>
+                                    <input type="text" id="list-name-{{ mailing_list.id }}" name="name" value="{{ mailing_list.name }}" required>
+                                </div>
+                                <div class="form-item">
+                                    <label for="list-description-{{ mailing_list.id }}">Description</label>
+                                    <input type="text" id="list-description-{{ mailing_list.id }}" name="description" value="{{ mailing_list.description }}">
+                                </div>
+                                <div class="form-item">
+                                    <label for="email-mode-{{ mailing_list.id }}">Email Mode</label>
+                                    <select id="email-mode-{{ mailing_list.id }}" name="email_mode" data-mailing-mode>
+                                        <option value="premade" {% if mailing_list.email_mode == 'premade' %}selected{% endif %}>Premade Email</option>
+                                        <option value="manual" {% if mailing_list.email_mode == 'manual' %}selected{% endif %}>Manual HTML</option>
+                                    </select>
+                                </div>
+                                <div class="form-item">
+                                    <label for="title-{{ mailing_list.id }}">Title</label>
+                                    <input type="text" id="title-{{ mailing_list.id }}" name="title" value="{{ mailing_list.title }}" placeholder="Newsletter title">
+                                </div>
+                                <div class="form-item">
+                                    <label for="subject-{{ mailing_list.id }}">Subject</label>
+                                    <input type="text" id="subject-{{ mailing_list.id }}" name="subject" value="{{ mailing_list.subject }}" placeholder="Email subject">
+                                </div>
+                            </div>
+
+                            <div class="mailing-list-layout">
+                                <div class="mailing-list-section mailing-list-section-members">
+                                    <div class="section-heading">
+                                        <h4>Members</h4>
+                                        <span class="help-text">Select everyone who should receive this mailing list.</span>
+                                    </div>
+                                    <select name="member_ids" multiple size="12" class="mailing-member-select">
+                                        {% for user in users %}
+                                            <option value="{{ user.id }}" {% if user.id in mailing_list.member_ids %}selected{% endif %}>
+                                                {{ user.name or user.email }}{% if user.send_emails == 0 %} (emails off){% endif %}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+
+                                <div class="mailing-list-section mailing-list-section-compose" data-mode-section="premade">
+                                    <div class="section-heading">
+                                        <h4>Premade Email Fields</h4>
+                                        <span class="help-text">These fields render as a polished school email.</span>
+                                    </div>
+                                    <label for="body-text-{{ mailing_list.id }}">Main Body</label>
+                                    <textarea id="body-text-{{ mailing_list.id }}" name="body_text" class="menu-textarea mailing-textarea" placeholder="Write the main message in Markdown">{{ mailing_list.body_text }}</textarea>
+                                    <label for="signature-text-{{ mailing_list.id }}">Signature</label>
+                                    <textarea id="signature-text-{{ mailing_list.id }}" name="signature_text" class="menu-textarea mailing-textarea" placeholder="Add a closing note or sign-off">{{ mailing_list.signature_text }}</textarea>
+                                </div>
+
+                                <div class="mailing-list-section mailing-list-section-compose" data-mode-section="manual">
+                                    <div class="section-heading">
+                                        <h4>Manual HTML</h4>
+                                        <span class="help-text">Use raw HTML for complete control.</span>
+                                    </div>
+                                    <textarea id="manual-html-{{ mailing_list.id }}" name="manual_html" class="menu-textarea mailing-textarea mailing-html" placeholder="<p>Hello {(user_name)}</p>">{{ mailing_list.manual_html }}</textarea>
+                                </div>
+
+                                <div class="mailing-list-section mailing-list-section-footer">
+                                    <div class="section-heading">
+                                        <h4>Shared Footer</h4>
+                                        <span class="help-text">This footer is included on every email sent from this list.</span>
+                                    </div>
+                                    <textarea id="footer-html-{{ mailing_list.id }}" name="footer_html" class="menu-textarea mailing-textarea mailing-footer" placeholder="Add a shared footer or school sign-off">{{ mailing_list.footer_html }}</textarea>
+                                </div>
+                            </div>
+
+                            <div class="mailing-list-actions-row">
+                                <button type="submit" class="btn btn-primary">Save List</button>
+                                <a href="/admin/mailing-lists/{{ mailing_list.id }}/preview{% if mailing_list.member_ids %}?preview_member_id={{ mailing_list.member_ids[0] }}{% endif %}" target="_blank" class="btn btn-info">Preview Email</a>
+                                <button type="submit" class="btn btn-success" formaction="/admin/mailing-lists/{{ mailing_list.id }}/send" formmethod="post" onclick="return confirm('Send this mailing list to all selected members?');">Send To List</button>
+                                <button type="submit" class="btn btn-danger" formaction="/admin/mailing-lists/{{ mailing_list.id }}/delete" formmethod="post" onclick="return confirm('Delete mailing list {{ mailing_list.name }}?');">Delete</button>
+                            </div>
+                        </form>
+                    </div>
+                </details>
+            {% endfor %}
+        {% else %}
+            <div class="card admin-card">
+                <div class="card-body">
+                    <div class="empty-state">
+                        <p>No mailing lists yet. Create the first one above.</p>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <footer class="page-footer">
+        <p>AS Updates &copy; <span id="year"></span> &bull; Mailing Lists</p>
+    </footer>
+
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+        const themeToggle = document.getElementById('theme-toggle');
+        const html = document.documentElement;
+        const savedTheme = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        if (savedTheme === 'dark') html.setAttribute('data-theme', 'dark');
+        themeToggle.addEventListener('click', () => {
+            const current = html.getAttribute('data-theme');
+            const newTheme = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            themeToggle.textContent = newTheme === 'dark' ? '🌟 Light Mode' : '🌙 Dark Mode';
+        });
+        if (savedTheme === 'dark') themeToggle.textContent = '🌟 Light Mode';
+
+        document.querySelectorAll('[data-mailing-form]').forEach((form) => {
+            const modeSelect = form.querySelector('[data-mailing-mode]');
+            const sections = form.querySelectorAll('[data-mode-section]');
+
+            const syncVisibility = () => {
+                const mode = modeSelect.value;
+                sections.forEach((section) => {
+                    const sectionMode = section.getAttribute('data-mode-section');
+                    section.style.display = sectionMode === mode ? 'block' : 'none';
+                });
+            };
+
+            modeSelect.addEventListener('change', syncVisibility);
+            syncVisibility();
+        });
+    </script>
+</body>
+</html>

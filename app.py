@@ -26,6 +26,7 @@ from emailer import send_test_email, send_email
 from scheduler import start_scheduler, generate_email_html
 from email_security import decrypt_email, encrypt_email, email_lookup_value, normalize_email
 from homework import fetch_homework_items, homework_email_summary, split_homework
+from markdown_email import render_markdown_html, embed_markdown_images
 from email_templates import (
     WEEKDAYS,
     PERIOD_ORDER,
@@ -46,6 +47,7 @@ from email_templates import (
     serialize_week_menu,
     timetable_day_rows,
     timetable_rows,
+    render_mailing_list_email_html,
 )
 
 # Load environment variables
@@ -239,49 +241,112 @@ def _notice_lines(raw_notice):
 
 
 def _render_markdown_notice(raw_notice):
-    if not raw_notice:
-        return Markup("")
+    return Markup(render_markdown_html(raw_notice))
 
-    if bleach is None or markdown_lib is None:
-        escaped_notice = html.escape(str(raw_notice))
-        paragraphs = [
-            f"<p>{line}</p>"
-            for line in escaped_notice.splitlines()
-            if line.strip()
-        ]
-        return Markup("".join(paragraphs) or f"<p>{escaped_notice}</p>")
 
-    rendered = markdown_lib.markdown(
-        str(raw_notice),
-        extensions=["extra", "nl2br", "sane_lists", "fenced_code"],
+def _mailing_list_placeholder_map(user):
+    user = user or {}
+    display_name = (user.get("name") or "").strip() or (user.get("email") or "").strip() or "Recipient"
+    email = (user.get("email") or "").strip()
+    return {
+        "{(user_name)}": display_name,
+        "{(user_email)}": email,
+    }
+
+
+def _replace_mailing_list_placeholders(text, user):
+    text = str(text or "")
+    for placeholder, value in _mailing_list_placeholder_map(user).items():
+        text = text.replace(placeholder, value)
+    return text
+
+
+def _fetch_mailing_lists():
+    db = get_db()
+    c = db.cursor()
+    c.execute(
+        """
+        SELECT ml.*, COUNT(m.user_id) AS member_count
+        FROM mailing_lists ml
+        LEFT JOIN mailing_list_members m ON m.list_id = ml.id
+        GROUP BY ml.id
+        ORDER BY datetime(ml.updated_at) DESC, datetime(ml.created_at) DESC, ml.id DESC
+        """
     )
-    cleaned = bleach.clean(
-        rendered,
-        tags=[
-            "p",
-            "br",
-            "strong",
-            "em",
-            "ul",
-            "ol",
-            "li",
-            "blockquote",
-            "pre",
-            "code",
-            "h1",
-            "h2",
-            "h3",
-            "h4",
-            "h5",
-            "h6",
-            "a",
-            "hr",
-        ],
-        attributes={"a": ["href", "title", "rel", "target"]},
-        protocols=["http", "https", "mailto"],
-        strip=True,
+    lists = [_row_to_dict(row) for row in c.fetchall()]
+    db.close()
+    return lists
+
+
+def _fetch_mailing_list(list_id):
+    db = get_db()
+    c = db.cursor()
+    c.execute("SELECT * FROM mailing_lists WHERE id=?", (list_id,))
+    mailing_list = _row_to_dict(c.fetchone())
+    db.close()
+    return mailing_list
+
+
+def _fetch_mailing_list_members(list_id):
+    db = get_db()
+    c = db.cursor()
+    c.execute(
+        """
+        SELECT u.id, u.email, u.name, u.send_emails
+        FROM users u
+        INNER JOIN mailing_list_members mlm ON mlm.user_id = u.id
+        WHERE mlm.list_id=?
+        ORDER BY COALESCE(NULLIF(u.name, ''), u.email) COLLATE NOCASE
+        """,
+        (list_id,),
     )
-    return Markup(cleaned)
+    members = [_row_to_dict(row) for row in c.fetchall()]
+    db.close()
+    return members
+
+
+def _fetch_users_for_select():
+    db = get_db()
+    c = db.cursor()
+    c.execute("SELECT id, email, name, send_emails FROM users ORDER BY COALESCE(NULLIF(name, ''), email) COLLATE NOCASE")
+    users = [_row_to_dict(row) for row in c.fetchall()]
+    db.close()
+    return users
+
+
+def _render_mailing_list_email(mailing_list, recipient, preview=False):
+    mailing_list = mailing_list or {}
+    recipient = recipient or {}
+    mode = (mailing_list.get("email_mode") or "premade").strip().lower()
+    title = _replace_mailing_list_placeholders(mailing_list.get("title", ""), recipient)
+    subject = _replace_mailing_list_placeholders(mailing_list.get("subject", ""), recipient)
+    footer_text = _replace_mailing_list_placeholders(mailing_list.get("footer_html", ""), recipient)
+    footer_html = render_markdown_html(footer_text)
+
+    if mode == "manual":
+        body_html = _replace_mailing_list_placeholders(mailing_list.get("manual_html", ""), recipient)
+        body_html = embed_markdown_images(body_html)
+        signature_html = ""
+    else:
+        body_markdown = _replace_mailing_list_placeholders(mailing_list.get("body_text", ""), recipient)
+        signature_markdown = _replace_mailing_list_placeholders(mailing_list.get("signature_text", ""), recipient)
+        body_html = render_markdown_html(body_markdown)
+        signature_html = render_markdown_html(signature_markdown)
+
+    context = {
+        "list_name": mailing_list.get("name", "Mailing List"),
+        "description": mailing_list.get("description", ""),
+        "email_mode": mode,
+        "title": title or mailing_list.get("name", "Mailing List"),
+        "subject": subject,
+        "recipient_name": recipient.get("name") or recipient.get("email") or "Recipient",
+        "recipient_email": recipient.get("email") or "",
+        "body_html": Markup(body_html),
+        "signature_html": Markup(signature_html),
+        "footer_html": Markup(footer_html),
+        "preview_mode": preview,
+    }
+    return render_mailing_list_email_html(context)
 
 
 def _parse_menu_data(menu_text):
@@ -394,6 +459,7 @@ def _build_user_email_context(user, settings, external_url_base=None):
     menu_data = _parse_menu_data(menu_text)
     
     school_notice = settings.get("school_notice", "")
+    school_notice_html = Markup(render_markdown_html(school_notice))
     display_name = user.get("name") or user.get("email", "").split("@")[0].replace(".", " ").title() or "Student"
 
     return {
@@ -419,6 +485,7 @@ def _build_user_email_context(user, settings, external_url_base=None):
         "homework_summary": homework_summary,
         "homework_enabled": homework_enabled,
         "school_notice": school_notice,
+        "school_notice_html": school_notice_html,
         "school_notice_lines": _notice_lines(school_notice),
         "period_order": PERIOD_ORDER,
         "day_timetable_fields": DAY_TIMETABLE_FIELDS,
@@ -1258,6 +1325,9 @@ def admin_dashboard():
             for item in notice_history
         ]
         active_sessions = _active_logged_in_users()
+        c.execute("SELECT COUNT(*) FROM mailing_lists")
+        mailing_list_count_row = c.fetchone()
+        mailing_list_count = mailing_list_count_row[0] if mailing_list_count_row else 0
         
         # Convert to list of dicts for easier template use
         homework_by_user = {}
@@ -1296,12 +1366,243 @@ def admin_dashboard():
             app_uptime=_app_uptime(),
             active_sessions=active_sessions,
             active_session_count=len(active_sessions),
+            mailing_list_count=mailing_list_count,
         )
         
     except Exception as e:
         print(f"[✗] Admin dashboard error: {e}")
         flash("Error loading admin panel", "danger")
         return redirect(url_for("login"))
+
+
+@app.route("/admin/mailing-lists", methods=["GET"])
+@admin_required
+def admin_mailing_lists():
+    """Manage mailing lists and compose list emails."""
+
+    try:
+        mailing_lists = _fetch_mailing_lists()
+        users = _fetch_users_for_select()
+        db = get_db()
+        c = db.cursor()
+        c.execute("SELECT list_id, user_id FROM mailing_list_members")
+        membership_rows = c.fetchall()
+        db.close()
+
+        membership_map = {}
+        for row in membership_rows:
+            membership_map.setdefault(row[0], []).append(row[1])
+
+        for mailing_list in mailing_lists:
+            member_ids = membership_map.get(mailing_list.get("id"), [])
+            mailing_list["member_ids"] = member_ids
+            mailing_list["member_count"] = len(member_ids)
+
+        return render_template(
+            "admin_mailing_lists.html",
+            mailing_lists=mailing_lists,
+            users=users,
+            list_modes=["premade", "manual"],
+            preview_member_id=request.args.get("preview_member_id", type=int),
+        )
+
+    except Exception as e:
+        print(f"[✗] Mailing lists page error: {e}")
+        flash("Error loading mailing lists", "danger")
+        return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/mailing-lists/create", methods=["POST"])
+@admin_required
+def admin_mailing_lists_create():
+    """Create a new mailing list."""
+
+    name = request.form.get("name", "").strip()
+    description = request.form.get("description", "").strip()
+
+    if not name:
+        flash("Mailing list name is required", "warning")
+        return redirect(url_for("admin_mailing_lists"))
+
+    try:
+        db = get_db()
+        c = db.cursor()
+        c.execute(
+            """
+            INSERT INTO mailing_lists (name, description, email_mode, title, subject, body_text, signature_text, manual_html, footer_html)
+            VALUES (?, ?, 'premade', ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                name,
+                description,
+                name,
+                f"{name} update",
+                "",
+                "",
+                "",
+                "",
+            ),
+        )
+        db.commit()
+        db.close()
+        flash(f"Mailing list '{name}' created", "success")
+    except Exception as e:
+        print(f"[✗] Mailing list create error: {e}")
+        flash("Error creating mailing list", "danger")
+
+    return redirect(url_for("admin_mailing_lists"))
+
+
+@app.route("/admin/mailing-lists/<int:list_id>", methods=["POST"])
+@admin_required
+def admin_mailing_lists_update(list_id):
+    """Update a mailing list and replace its members."""
+
+    name = request.form.get("name", "").strip()
+    description = request.form.get("description", "").strip()
+    email_mode = request.form.get("email_mode", "premade").strip().lower()
+    title = request.form.get("title", "").strip()
+    subject = request.form.get("subject", "").strip()
+    body_text = request.form.get("body_text", "").strip()
+    signature_text = request.form.get("signature_text", "").strip()
+    manual_html = request.form.get("manual_html", "").strip()
+    footer_html = request.form.get("footer_html", "").strip()
+    member_ids = [member_id for member_id in request.form.getlist("member_ids") if member_id]
+
+    if not name:
+        flash("Mailing list name is required", "warning")
+        return redirect(url_for("admin_mailing_lists"))
+
+    try:
+        db = get_db()
+        c = db.cursor()
+        c.execute(
+            """
+            UPDATE mailing_lists
+            SET name=?, description=?, email_mode=?, title=?, subject=?, body_text=?, signature_text=?, manual_html=?, footer_html=?, updated_at=CURRENT_TIMESTAMP
+            WHERE id=?
+            """,
+            (name, description, email_mode, title, subject, body_text, signature_text, manual_html, footer_html, list_id),
+        )
+        c.execute("DELETE FROM mailing_list_members WHERE list_id=?", (list_id,))
+        for member_id in member_ids:
+            c.execute(
+                "INSERT OR IGNORE INTO mailing_list_members (list_id, user_id) VALUES (?, ?)",
+                (list_id, int(member_id)),
+            )
+        db.commit()
+        db.close()
+        flash(f"Mailing list '{name}' updated", "success")
+    except Exception as e:
+        print(f"[✗] Mailing list update error: {e}")
+        flash("Error updating mailing list", "danger")
+
+    return redirect(url_for("admin_mailing_lists"))
+
+
+@app.route("/admin/mailing-lists/<int:list_id>/preview", methods=["GET"])
+@admin_required
+def admin_mailing_lists_preview(list_id):
+    """Render a preview of a mailing list email."""
+
+    mailing_list = _fetch_mailing_list(list_id)
+    if not mailing_list:
+        flash("Mailing list not found", "warning")
+        return redirect(url_for("admin_mailing_lists"))
+
+    preview_member_id = request.args.get("preview_member_id", type=int)
+    recipient = None
+    if preview_member_id:
+        recipient = _fetch_user(preview_member_id)
+    if not recipient:
+        members = _fetch_mailing_list_members(list_id)
+        if members:
+            recipient = members[0]
+    if not recipient:
+        recipient = {"name": "Preview Recipient", "email": "preview@example.com"}
+
+    return _render_mailing_list_email(mailing_list, recipient, preview=True)
+
+
+@app.route("/admin/mailing-lists/<int:list_id>/send", methods=["POST"])
+@admin_required
+def admin_mailing_lists_send(list_id):
+    """Send a mailing list message to all enabled members."""
+
+    mailing_list = _fetch_mailing_list(list_id)
+    if not mailing_list:
+        flash("Mailing list not found", "warning")
+        return redirect(url_for("admin_mailing_lists"))
+
+    try:
+        members = _fetch_mailing_list_members(list_id)
+        if not members:
+            flash("Mailing list has no members", "warning")
+            return redirect(url_for("admin_mailing_lists"))
+
+        db = get_db()
+        c = db.cursor()
+        sent_count = 0
+        skipped_count = 0
+        failed_count = 0
+
+        for member in members:
+            if int(member.get("send_emails", 1) or 1) != 1:
+                skipped_count += 1
+                continue
+
+            subject = _replace_mailing_list_placeholders(
+                mailing_list.get("subject", "") or mailing_list.get("title", "") or mailing_list.get("name", "Mailing List"),
+                member,
+            )
+            html_content = _render_mailing_list_email(mailing_list, member, preview=False)
+            if send_email(member.get("email", ""), subject, html_content):
+                sent_count += 1
+                c.execute(
+                    "INSERT INTO mailing_list_sends (list_id, user_id, subject, email_mode) VALUES (?, ?, ?, ?)",
+                    (list_id, member["id"], subject, mailing_list.get("email_mode", "premade")),
+                )
+            else:
+                failed_count += 1
+
+        db.commit()
+        db.close()
+
+        flash(
+            f"Sent to {sent_count} member(s)" + (f", skipped {skipped_count}" if skipped_count else "") + (f", {failed_count} failed" if failed_count else ""),
+            "success" if sent_count else "warning",
+        )
+    except Exception as e:
+        print(f"[✗] Mailing list send error: {e}")
+        flash("Error sending mailing list email", "danger")
+
+    return redirect(url_for("admin_mailing_lists"))
+
+
+@app.route("/admin/mailing-lists/<int:list_id>/delete", methods=["POST"])
+@admin_required
+def admin_mailing_lists_delete(list_id):
+    """Delete a mailing list."""
+
+    try:
+        db = get_db()
+        c = db.cursor()
+        c.execute("SELECT name FROM mailing_lists WHERE id=?", (list_id,))
+        mailing_list = c.fetchone()
+        if not mailing_list:
+            db.close()
+            flash("Mailing list not found", "warning")
+            return redirect(url_for("admin_mailing_lists"))
+
+        c.execute("DELETE FROM mailing_lists WHERE id=?", (list_id,))
+        db.commit()
+        db.close()
+        flash(f"Mailing list '{mailing_list[0]}' deleted", "success")
+    except Exception as e:
+        print(f"[✗] Mailing list delete error: {e}")
+        flash("Error deleting mailing list", "danger")
+
+    return redirect(url_for("admin_mailing_lists"))
 
 
 @app.route("/admin/add-user", methods=["POST"])

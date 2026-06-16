@@ -220,3 +220,12 @@ def schedule_rows(schedule):
 def render_email_html(context):
     template = environment.get_template("email_original.html")
     return template.render(**context)
+
+
+def render_template_html(template_name, context):
+    template = environment.get_template(template_name)
+    return template.render(**context)
+
+
+def render_mailing_list_email_html(context):
+    return render_template_html("mailing_list_email.html", context)

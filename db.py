@@ -34,6 +34,24 @@ def _ensure_settings_row(conn):
         )
 
 
+def _ensure_mailing_lists_defaults(conn):
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        UPDATE mailing_lists
+        SET name = COALESCE(name, ''),
+            description = COALESCE(description, ''),
+            email_mode = COALESCE(email_mode, 'premade'),
+            title = COALESCE(title, ''),
+            subject = COALESCE(subject, ''),
+            body_text = COALESCE(body_text, ''),
+            signature_text = COALESCE(signature_text, ''),
+            manual_html = COALESCE(manual_html, ''),
+            footer_html = COALESCE(footer_html, '')
+        """
+    )
+
+
 def _ensure_user_defaults(conn):
     cursor = conn.cursor()
     cursor.execute("UPDATE users SET name = COALESCE(name, ''), timetable_a = COALESCE(timetable_a, ''), timetable_b = COALESCE(timetable_b, ''), homework_in_email = COALESCE(homework_in_email, 1)")
@@ -134,6 +152,53 @@ def init_db():
             """
         )
 
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS mailing_lists (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                description TEXT DEFAULT '',
+                email_mode TEXT DEFAULT 'premade',
+                title TEXT DEFAULT '',
+                subject TEXT DEFAULT '',
+                body_text TEXT DEFAULT '',
+                signature_text TEXT DEFAULT '',
+                manual_html TEXT DEFAULT '',
+                footer_html TEXT DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS mailing_list_members (
+                list_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (list_id, user_id),
+                FOREIGN KEY (list_id) REFERENCES mailing_lists(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+            """
+        )
+
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS mailing_list_sends (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                list_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                subject TEXT NOT NULL,
+                email_mode TEXT DEFAULT 'premade',
+                sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (list_id) REFERENCES mailing_lists(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+            """
+        )
+
         c.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)")
         c.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_lookup ON users(email_lookup)")
 
@@ -214,6 +279,63 @@ def verify_schema():
             """
         )
 
+        _ensure_column(conn, "mailing_lists", "description", "TEXT DEFAULT ''")
+        _ensure_column(conn, "mailing_lists", "email_mode", "TEXT DEFAULT 'premade'")
+        _ensure_column(conn, "mailing_lists", "title", "TEXT DEFAULT ''")
+        _ensure_column(conn, "mailing_lists", "subject", "TEXT DEFAULT ''")
+        _ensure_column(conn, "mailing_lists", "body_text", "TEXT DEFAULT ''")
+        _ensure_column(conn, "mailing_lists", "signature_text", "TEXT DEFAULT ''")
+        _ensure_column(conn, "mailing_lists", "manual_html", "TEXT DEFAULT ''")
+        _ensure_column(conn, "mailing_lists", "footer_html", "TEXT DEFAULT ''")
+        _ensure_column(conn, "mailing_lists", "updated_at", "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS mailing_lists (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                description TEXT DEFAULT '',
+                email_mode TEXT DEFAULT 'premade',
+                title TEXT DEFAULT '',
+                subject TEXT DEFAULT '',
+                body_text TEXT DEFAULT '',
+                signature_text TEXT DEFAULT '',
+                manual_html TEXT DEFAULT '',
+                footer_html TEXT DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS mailing_list_members (
+                list_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (list_id, user_id),
+                FOREIGN KEY (list_id) REFERENCES mailing_lists(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+            """
+        )
+
+        c.execute(
+            """
+            CREATE TABLE IF NOT EXISTS mailing_list_sends (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                list_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                subject TEXT NOT NULL,
+                email_mode TEXT DEFAULT 'premade',
+                sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (list_id) REFERENCES mailing_lists(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+            """
+        )
+
         c.execute(
             """
             CREATE TABLE IF NOT EXISTS homework_items (
@@ -246,6 +368,7 @@ def verify_schema():
 
         _ensure_settings_row(conn)
         _ensure_user_defaults(conn)
+        _ensure_mailing_lists_defaults(conn)
         migrate_user_emails(conn)
         c.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_lookup ON users(email_lookup)")
 

@@ -7,6 +7,7 @@ from db import get_db
 from emailer import send_email
 from email_security import decrypt_email, email_lookup_value
 from homework import fetch_homework_items, homework_email_summary
+from markdown_email import render_markdown_html
 from email_templates import (
     DAY_TIMETABLE_FIELDS,
     WEEKDAYS,
@@ -112,6 +113,7 @@ def _build_email_context(user, settings):
         homework_summary = homework_email_summary(homework_items)
         db.close()
     school_notice = settings.get("school_notice", "")
+    school_notice_html = render_markdown_html(school_notice)
     display_name = user.get("name") or user.get("email", "").split("@")[0].replace(".", " ").title() or "Student"
 
     return {
@@ -138,6 +140,7 @@ def _build_email_context(user, settings):
         "homework_items": homework_items,
         "homework_summary": homework_summary,
         "school_notice": school_notice,
+        "school_notice_html": school_notice_html,
         "school_notice_lines": _notice_lines(school_notice),
         "period_order": ["1", "2", "3", "4", "5a", "5b / Lunch", "6", "7"],
         "day_timetable_fields": DAY_TIMETABLE_FIELDS,
